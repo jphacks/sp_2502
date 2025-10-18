@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### ディレクトリ構造
 
 ```
-./
+ios/
 ├── iosApp.swift                          # アプリエントリーポイント
 ├── ContentView.swift                      # メインView（カードスタック表示）
 ├── AppConfiguration.swift                 # テストモード/APIモード切り替え
@@ -32,6 +32,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 │   ├── EmojiSelectorService.swift        # 絵文字選択ロジック
 │   └── MockDataProvider.swift            # テストデータ提供
 └── Assets.xcassets/                       # 画像・アイコンアセット
+ios.xcodeproj/                            # Xcodeプロジェクトファイル
 ```
 
 ### MVVM パターン
@@ -62,7 +63,7 @@ xcodebuild -project ios.xcodeproj -scheme ios -configuration Debug -sdk iphonesi
 ### ビルドエラーと警告の確認
 
 ```bash
-xcodebuild -project ios.xcodeproj -scheme ios -configuration Debug -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build | rg -E "(error:|warning:.*ImageGenerator|BUILD SUCCEEDED)"
+xcodebuild -project ios.xcodeproj -scheme ios -configuration Debug -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build | rg "(error:|warning:.*ImageGenerator|BUILD SUCCEEDED)"
 ```
 
 ## 技術スタック

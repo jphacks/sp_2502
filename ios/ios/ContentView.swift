@@ -65,6 +65,7 @@ struct ContentView: View {
                 } else if let card = viewModel.currentCard {
                     // カードスタック表示（中央に大きく配置）
                     cardStackView(currentCard: card, screenSize: geometry.size)
+                        .offset(y: -30)  // カードを上に移動
 
                     // 上部右：Deleteボタン
                     VStack {
@@ -91,7 +92,7 @@ struct ContentView: View {
                                 action: { viewModel.handleCut() }
                             )
                             .padding(.leading, 30)
-                            .padding(.bottom, 120)
+                            .padding(.bottom, 80)  // ボタンを下に移動
                             Spacer()
                         }
                     }
@@ -107,7 +108,7 @@ struct ContentView: View {
                                 action: { viewModel.handleLike() }
                             )
                             .padding(.trailing, 30)
-                            .padding(.bottom, 120)
+                            .padding(.bottom, 80)  // ボタンを下に移動
                         }
                     }
                 } else {
@@ -160,7 +161,6 @@ struct ContentView: View {
         .task {
             await viewModel.loadCards()
 
-            // 音声認識完了時のコールバックを設定
             speechViewModel.onRecognitionCompleted = { recognizedText in
                 Task { @MainActor in
                     await viewModel.addTaskCard(taskText: recognizedText)

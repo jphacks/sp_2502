@@ -10,6 +10,10 @@ import ImagePlayground
 class ImageGeneratorService {
     static let shared = ImageGeneratorService()
 
+    // ImageCreatorインスタンスをキャッシュして再利用（iOS 18.4+）
+    // 注: stored propertiesに@availableを付けられないため、Any?型で保持してキャスト
+    private var cachedImageCreator: Any?
+
     private init() {}
 
     /// タスクテキストと絵文字から画像を生成してローカルに保存
@@ -20,22 +24,38 @@ class ImageGeneratorService {
                 return imagePath
             }
             // ImageCreator APIが失敗した場合はフォールバック
-            print("⚠️ ImageCreator APIが失敗しました。フォールバック処理を実行します。")
+            print("⚠️ ImageCreator APIが失敗しました。Core Graphicsフォールバックに移行します。")
+        } else {
+            print("ℹ️ iOS 18.4未満のため、Core Graphicsで画像を生成します。")
         }
 
         // iOS 18.4未満、または ImageCreator API失敗時のフォールバック
-        return await generateWithCoreGraphics(taskText: taskText, emoji: emoji)
+        let result = await generateWithCoreGraphics(taskText: taskText, emoji: emoji)
+        if result != nil {
+            print("✅ Core Graphicsで画像生成成功")
+        }
+        return result
     }
 
     /// ImageCreator APIを使用した画像生成 (iOS 18.4+)
     @available(iOS 18.4, *)
-    private func generateWithImageCreator(taskText: String, emoji: String) async -> String? {
+    private func generateWithImageCreator(taskText: String, emoji: String, retryCount: Int = 0) async -> String? {
+        let maxRetries = 1
+
         do {
             // プロンプトを作成
             let prompt = createPromptForTask(taskText: taskText, emoji: emoji)
 
-            // ImageCreatorを初期化（async throws）
-            let creator = try await ImageCreator()
+            // ImageCreatorを取得または作成
+            let creator: ImageCreator
+            if let cached = cachedImageCreator as? ImageCreator {
+                creator = cached
+                print("♻️ キャッシュされたImageCreatorを使用します")
+            } else {
+                print("🆕 新しいImageCreatorを作成します")
+                creator = try await ImageCreator()
+                cachedImageCreator = creator as Any
+            }
 
             // スタイルを選択（タスクの種類に応じて）
             let style = selectImageStyle(for: taskText)
@@ -51,15 +71,33 @@ class ImageGeneratorService {
             for try await image in images {
                 let cgImage = image.cgImage
                 let uiImage = UIImage(cgImage: cgImage)
+                print("✅ ImageCreator APIで画像生成成功")
                 return saveImageToCache(uiImage, taskId: UUID().uuidString)
             }
 
             return nil
         } catch ImageCreator.Error.notSupported {
             print("⚠️ このデバイスではImage Creationがサポートされていません")
+            cachedImageCreator = nil
             return nil
+        } catch let error as NSError where error.domain == "NSCocoaErrorDomain" && error.code == 4099 {
+            // 接続エラー（Code=4099）を検出
+            print("🔌 ImageCreator接続エラー (Code=4099): システムサービスへの接続が中断されました")
+            cachedImageCreator = nil // キャッシュをクリア
+
+            // リトライ
+            if retryCount < maxRetries {
+                print("🔄 リトライします... (試行 \(retryCount + 1)/\(maxRetries))")
+                try? await Task.sleep(nanoseconds: 500_000_000) // 0.5秒待機
+                return await generateWithImageCreator(taskText: taskText, emoji: emoji, retryCount: retryCount + 1)
+            } else {
+                print("❌ リトライ上限に達しました。フォールバックに移行します。")
+                return nil
+            }
         } catch {
             print("❌ ImageCreator API エラー: \(error.localizedDescription)")
+            print("   エラー詳細: \(error)")
+            cachedImageCreator = nil // エラー時はキャッシュをクリア
             return nil
         }
     }
@@ -104,8 +142,8 @@ class ImageGeneratorService {
 
     /// Core Graphicsを使用した画像生成（フォールバック）
     private func generateWithCoreGraphics(taskText: String, emoji: String) async -> String? {
-        // 画像サイズ
-        let size = CGSize(width: 400, height: 300)
+        // 画像サイズ（正方形）
+        let size = CGSize(width: 400, height: 400)
 
         // グラデーション色を選択（タスクの種類に応じて）
         let gradientColors = selectGradientColors(for: taskText)
