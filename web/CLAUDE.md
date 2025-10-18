@@ -425,7 +425,7 @@ PostgreSQLデータベースはDockerで実行：
 
 - **ポート**：5334（設定可能）
 - **デフォルト認証情報**：postgres/postgres
-- **データベース名**：template
+- **データベース名**：database
 
 ### tRPC設定
 
