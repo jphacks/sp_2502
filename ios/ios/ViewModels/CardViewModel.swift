@@ -11,12 +11,15 @@ class CardViewModel: ObservableObject {
     @Published var currentCard: Card?
     @Published var isLoading = false
     @Published var errorMessage: String?
+    @Published var isGeneratingCard = false
 
     private var cards: [Card] = []
     private var swipeHistory: [(card: Card, action: String)] = []
     private let apiService = APIService.shared
     private let mockDataProvider = MockDataProvider.shared
     private let appConfig = AppConfiguration.shared
+    private let imageGenerator = ImageGeneratorService.shared
+    private let emojiSelector = EmojiSelectorService.shared
 
     @MainActor
     func loadCards() async {
@@ -113,5 +116,44 @@ class CardViewModel: ObservableObject {
     @MainActor
     func handleUndo() {
         performUndo()
+    }
+
+    // 音声入力からタスクカードを追加
+    @MainActor
+    func addTaskCard(taskText: String) async {
+        guard !taskText.isEmpty else {
+            errorMessage = "タスクが空です"
+            return
+        }
+
+        isGeneratingCard = true
+        errorMessage = nil
+
+        // 絵文字を選択
+        let emoji = emojiSelector.selectEmojiWithPriority(for: taskText)
+
+        // 画像を生成
+        guard let imagePath = await imageGenerator.generateTaskImage(taskText: taskText, emoji: emoji) else {
+            errorMessage = "画像の生成に失敗しました"
+            isGeneratingCard = false
+            return
+        }
+
+        // タスクカードを作成
+        let taskCard = Card(
+            id: UUID().uuidString,
+            imageURL: imagePath,
+            taskText: taskText,
+            emoji: emoji,
+            title: taskText
+        )
+
+        // カードスタックの先頭に追加
+        cards.insert(taskCard, at: 0)
+        currentCard = taskCard
+
+        print("✅ タスクカード作成完了: \(taskText)")
+
+        isGeneratingCard = false
     }
 }

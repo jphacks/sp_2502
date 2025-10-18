@@ -17,6 +17,14 @@ struct ContentView: View {
             if viewModel.isLoading {
                 ProgressView("Loading cards...")
                     .font(.headline)
+            } else if viewModel.isGeneratingCard {
+                VStack(spacing: 20) {
+                    ProgressView()
+                        .scaleEffect(1.5)
+                    Text("カードを生成中...")
+                        .font(.headline)
+                        .foregroundColor(.gray)
+                }
             } else if let errorMessage = viewModel.errorMessage {
                 VStack(spacing: 20) {
                     Image(systemName: "exclamationmark.triangle")
@@ -92,6 +100,13 @@ struct ContentView: View {
         }
         .task {
             await viewModel.loadCards()
+
+            // 音声認識完了時のコールバックを設定
+            speechViewModel.onRecognitionCompleted = { recognizedText in
+                Task { @MainActor in
+                    await viewModel.addTaskCard(taskText: recognizedText)
+                }
+            }
         }
     }
 

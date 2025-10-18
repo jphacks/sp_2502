@@ -18,6 +18,13 @@ struct Card: Identifiable, Codable {
     let title: String?
     let description: String?
     let isLocalImage: Bool
+    let emoji: String?
+    let taskText: String?
+
+    // タスクカードかどうかを判定
+    var isTaskCard: Bool {
+        return taskText != nil
+    }
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -34,6 +41,8 @@ struct Card: Identifiable, Codable {
         title = try container.decodeIfPresent(String.self, forKey: .title)
         description = try container.decodeIfPresent(String.self, forKey: .description)
         isLocalImage = false
+        emoji = nil
+        taskText = nil
     }
 
     // テストモード用のイニシャライザ
@@ -43,6 +52,19 @@ struct Card: Identifiable, Codable {
         self.title = title
         self.description = description
         self.isLocalImage = isLocalImage
+        self.emoji = nil
+        self.taskText = nil
+    }
+
+    // タスクカード用のイニシャライザ
+    init(id: String, imageURL: String, taskText: String, emoji: String, title: String? = nil) {
+        self.id = id
+        self.imageURL = imageURL
+        self.taskText = taskText
+        self.emoji = emoji
+        self.title = title
+        self.description = nil
+        self.isLocalImage = true
     }
 }
 

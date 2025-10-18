@@ -19,6 +19,9 @@ class SpeechRecognizerViewModel: ObservableObject {
     private var recognitionTask: SFSpeechRecognitionTask?
     private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "ja-JP"))
 
+    // 認識完了時のコールバック
+    var onRecognitionCompleted: ((String) -> Void)?
+
     // 権限チェック
     func checkPermissions() async -> Bool {
         // 音声認識権限のチェック
@@ -134,6 +137,9 @@ class SpeechRecognizerViewModel: ObservableObject {
         // 認識結果をログに出力
         if !recognizedText.isEmpty {
             print("認識されたテキスト: \(recognizedText)")
+
+            // コールバックを呼び出し
+            onRecognitionCompleted?(recognizedText)
         }
     }
 }

@@ -37,7 +37,10 @@ struct CardView: View {
                     )
                     .overlay(
                         Group {
-                            if card.isLocalImage {
+                            if card.isTaskCard {
+                                // タスクカード用の表示
+                                taskCardContent
+                            } else if card.isLocalImage {
                                 // ローカル画像の表示
                                 Image(card.imageURL)
                                     .resizable()
@@ -69,7 +72,7 @@ struct CardView: View {
                     )
                     .padding(16)
 
-                if let title = card.title {
+                if let title = card.title, !card.isTaskCard {
                     Text(title)
                         .font(.headline)
                         .foregroundColor(.black)
@@ -78,6 +81,41 @@ struct CardView: View {
             }
         }
         .frame(width: 280, height: 380)
+    }
+
+    // タスクカード用のコンテンツ
+    @ViewBuilder
+    private var taskCardContent: some View {
+        ZStack {
+            // 生成された画像を表示
+            if let uiImage = loadImageFromPath(card.imageURL) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .clipped()
+            } else {
+                // フォールバック
+                Color.purple.opacity(0.3)
+            }
+
+            // 絵文字をオーバーレイ
+            if let emoji = card.emoji {
+                VStack {
+                    Spacer()
+                    Text(emoji)
+                        .font(.system(size: 60))
+                        .padding(.bottom, 8)
+                }
+            }
+        }
+    }
+
+    // ローカルパスから画像を読み込む
+    private func loadImageFromPath(_ path: String) -> UIImage? {
+        guard FileManager.default.fileExists(atPath: path) else {
+            return nil
+        }
+        return UIImage(contentsOfFile: path)
     }
 }
 
