@@ -11,7 +11,7 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
-import { auth } from "@/server/auth";
+import { getSession } from "@/server/auth/helpers";
 import { db } from "@/server/db";
 
 /**
@@ -27,7 +27,7 @@ import { db } from "@/server/db";
  * @see https://trpc.io/docs/server/context
  */
 export const createTRPCContext = async (opts: { headers: Headers }) => {
-  const session = await auth();
+  const session = await getSession();
 
   return {
     db,
@@ -120,14 +120,36 @@ export const publicProcedure = t.procedure.use(timingMiddleware);
  */
 export const protectedProcedure = t.procedure
   .use(timingMiddleware)
-  .use(({ ctx, next }) => {
+  .use(async ({ ctx, next }) => {
     if (!ctx.session?.user) {
       throw new TRPCError({ code: "UNAUTHORIZED" });
     }
+
+    // Sync Auth0 user to local database
+    const { upsertUser } = await import("@/server/modules/user/_repo");
+    const userResult = await upsertUser(ctx.db, {
+      id: ctx.session.user.sub,
+      email: ctx.session.user.email ?? null,
+      name: ctx.session.user.name ?? null,
+      image: ctx.session.user.picture ?? null,
+    });
+
+    if (!userResult.success) {
+      console.error("Failed to sync user:", userResult.error);
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to sync user data",
+      });
+    }
+
     return next({
       ctx: {
         // infers the `session` as non-nullable
-        session: { ...ctx.session, user: ctx.session.user },
+        // Auth0 uses 'sub' as the user ID, map it to 'id' for compatibility
+        session: {
+          ...ctx.session,
+          user: { ...ctx.session.user, id: ctx.session.user.sub },
+        },
       },
     });
   });
