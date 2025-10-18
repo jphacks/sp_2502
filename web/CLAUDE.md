@@ -18,7 +18,7 @@
 - **Next.js 15** (App Router)
 - **TypeScript 5.8**
 - **tRPC 11** - 型安全なAPI
-- **NextAuth.js v5** (Auth.js) - 認証機能
+- **Auth0** (@auth0/nextjs-auth0 v4) - 認証機能
 - **Drizzle ORM** - PostgreSQL対応
 - **Chakra UI** - スタイリング
 - **React 19** - React Query対応
@@ -39,7 +39,7 @@
 ```bash
 # 1. リポジトリのクローン
 git clone <repository-url>
-cd sp_2502
+cd t3-app-template
 
 # 2. 環境変数の設定
 cp .env.example .env
@@ -190,20 +190,23 @@ WriteまたはEditツールを使用してファイルを編集すると、以�
 src/
 ├── app/                    # Next.js App Router
 │   ├── api/               # APIルート
-│   │   ├── auth/          # NextAuthエンドポイント
 │   │   └── trpc/          # tRPCハンドラ
 │   ├── _components/       # ページ固有のコンポーネント
-│   ├── layout.tsx         # ルートレイアウト
+│   ├── layout.tsx         # ルートレイアウト（Auth0Provider設定）
 │   └── page.tsx           # ホームページ
+├── lib/                    # 共通ライブラリ
+│   └── auth0.ts           # Auth0Clientインスタンス
 ├── server/                 # バックエンドロジック
 │   ├── api/               # tRPCルーター
-│   ├── auth/              # 認証設定
+│   ├── auth/              # 認証ヘルパー
+│   │   └── helpers.ts     # getSession()など
 │   ├── db/                # データベース層
 │   │   └── schema/        # Drizzleスキーマ
 │   ├── modules/           # ドメインモジュール（4層アーキテクチャ）
 │   ├── types/             # 共通型定義
 │   └── utils/             # ユーティリティ
 ├── trpc/                   # tRPCクライアント設定
+├── middleware.ts           # Auth0ミドルウェア（認証ルート自動処理）
 └── styles/                 # グローバルスタイル
 ```
 
@@ -412,7 +415,7 @@ return deps.db.transaction(async tx => {
 #### 設定
 
 - **スキーマの場所**：`src/server/db/schema/`
-- **テーブルプレフィックス**：`database_`（マルチプロジェクトスキーマ対応）
+- **テーブルプレフィックス**：`template_`（マルチプロジェクトスキーマ対応）
 - **型推論**：Drizzleから`InsertNote`、`SelectNote`など
 - **リレーション**：`schema/relations.ts`で定義
 
@@ -422,7 +425,7 @@ PostgreSQLデータベースはDockerで実行：
 
 - **ポート**：5334（設定可能）
 - **デフォルト認証情報**：postgres/postgres
-- **データベース名**：database
+- **データベース名**：template
 
 ### tRPC設定
 
@@ -432,12 +435,28 @@ PostgreSQLデータベースはDockerで実行：
 - **Auth Middleware**：`protectedProcedure`でセッション検証
 - **Context**：`db`、`session`、`headers`を提供
 
-### 認証（NextAuth.js v5）
+### 認証（Auth0）
 
-- **Adapter**：Drizzleアダプター
-- **Providers**：Discord OAuth（拡張可能）
-- **Session Strategy**：データベースセッション
-- **Tables**：`database_`プレフィックス付きの`users`、`accounts`、`sessions`
+- **SDK**：@auth0/nextjs-auth0 v4
+- **認証方式**：OAuthベースの認証（Auth0）
+- **セッション管理**：ミドルウェアベースの自動セッション管理
+- **プロバイダー**：Auth0 Universal Login（複数のプロバイダーをAuth0側で設定可能）
+
+#### 認証エンドポイント
+
+Auth0ミドルウェアが以下のエンドポイントを自動生成します：
+
+| エンドポイント | 用途 | Auth0設定 |
+|---|---|---|
+| `/auth/login` | ログイン開始 | - |
+| `/auth/logout` | ログアウト | Allowed Logout URLs に追加 |
+| `/auth/callback` | OAuth コールバック | Allowed Callback URLs に追加 |
+| `/auth/me` | ユーザー情報取得（JSON） | - |
+| `/auth/profile` | プロフィール取得 | - |
+
+**Auth0ダッシュボード設定例（開発環境）：**
+- Allowed Callback URLs: `http://localhost:3304/auth/callback`
+- Allowed Logout URLs: `http://localhost:3304`
 
 #### 認証と認可パターン
 
@@ -449,18 +468,75 @@ export const createPost = protectedProcedure
   .output(response)
   .mutation(async ({ ctx, input }) => {
     // ctx.session.userが保証される
+    // Auth0の場合、user.subがユーザーIDとして使用される
     const deps = createAuthDeps(ctx.db, UserId.parse(ctx.session.user.id));
     // ...
   });
+```
+
+**セッション情報の構造：**
+```typescript
+{
+  user: {
+    sub: string;           // Auth0ユーザーID（一意識別子）
+    name?: string;         // 表示名
+    nickname?: string;     // ニックネーム
+    email?: string;        // メールアドレス
+    email_verified?: boolean;
+    picture?: string;      // プロフィール画像URL
+    // ...その他のクレーム
+    id: string;           // tRPCミドルウェアでsubからマッピング
+  }
+  tokenSet: {
+    access_token: string;
+    id_token: string;
+    // ...
+  }
+}
 ```
 
 ### 環境変数設定
 
 環境変数は`@t3-oss/env-nextjs`を使用して検証されます。スキーマは`/src/env.js`で定義され、実行時に検証されます。
 
+#### 必須変数
+
+**Auth0関連：**
+- `AUTH0_SECRET` - セッション暗号化キー（`openssl rand -base64 32`で生成）
+- `AUTH0_BASE_URL` - アプリケーションのベースURL
+- `AUTH0_ISSUER_BASE_URL` - Auth0テナントのドメインURL（例：`https://your-tenant.auth0.com`）
+- `AUTH0_CLIENT_ID` - Auth0アプリケーションID
+- `AUTH0_CLIENT_SECRET` - Auth0アプリケーションシークレット
+
+**データベース関連：**
+- `POSTGRES_*` - データベース接続（DATABASE_URLに統合）
+
+#### Auth0テナント情報の取得方法
+
+1. **Auth0ダッシュボード**にログイン
+2. **Applications > Applications**から対象アプリを選択
+3. **Settings**タブで以下を確認：
+   - **Domain** → `AUTH0_ISSUER_BASE_URL`（`https://`を追加）
+   - **Client ID** → `AUTH0_CLIENT_ID`
+   - **Client Secret** → `AUTH0_CLIENT_SECRET`
+
 #### 設定例（`.env`）
 
-[.env.example](./.env.example) を参照してください。
+```env
+# Auth0認証設定
+AUTH0_SECRET="<openssl rand -base64 32で生成したランダム文字列>"
+AUTH0_BASE_URL="http://localhost:3304"
+AUTH0_ISSUER_BASE_URL="https://your-tenant.auth0.com"
+AUTH0_CLIENT_ID="your-auth0-client-id"
+AUTH0_CLIENT_SECRET="your-auth0-client-secret"
+
+# PostgreSQL接続
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=template
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5334
+```
 
 ### MCPサーバー
 

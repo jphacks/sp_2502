@@ -3,9 +3,11 @@ import { z } from "zod";
 
 const {
   NODE_ENV,
-  AUTH_SECRET,
-  AUTH_DISCORD_ID,
-  AUTH_DISCORD_SECRET,
+  AUTH0_SECRET,
+  AUTH0_BASE_URL,
+  AUTH0_ISSUER_BASE_URL,
+  AUTH0_CLIENT_ID,
+  AUTH0_CLIENT_SECRET,
   LOCAL_DATABASE_URL,
   PROD_DATABASE_URL,
   SKIP_ENV_VALIDATION,
@@ -13,25 +15,23 @@ const {
   MIGRATE_PROD_DATABASE_URL,
 } = process.env;
 
-const isLocalRuntime = DB_RUNTIME !== "neon";
-
 export const env = createEnv({
   /**
    * Specify your server-side environment variables schema here. This way you can ensure the app
    * isn't built with invalid env vars.
    */
   server: {
-    AUTH_SECRET: NODE_ENV === "production" ? z.string() : z.string().optional(),
-    AUTH_DISCORD_ID: z.string(),
-    AUTH_DISCORD_SECRET: z.string(),
+    AUTH0_SECRET: z.string(),
+    AUTH0_BASE_URL: z.string().url(),
+    AUTH0_ISSUER_BASE_URL: z.string().url(),
+    AUTH0_CLIENT_ID: z.string(),
+    AUTH0_CLIENT_SECRET: z.string(),
     DATABASE_URL: z.string().url(),
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
     DB_RUNTIME: z.enum(["local", "neon"]).default("local"),
-    MIGRATE_PROD_DATABASE_URL: isLocalRuntime
-      ? z.string().url()
-      : z.string().url().optional(),
+    MIGRATE_PROD_DATABASE_URL: z.string().url(),
   },
 
   /**
@@ -48,9 +48,11 @@ export const env = createEnv({
    * middlewares) or client-side so we need to destruct manually.
    */
   runtimeEnv: {
-    AUTH_SECRET: AUTH_SECRET,
-    AUTH_DISCORD_ID: AUTH_DISCORD_ID,
-    AUTH_DISCORD_SECRET: AUTH_DISCORD_SECRET,
+    AUTH0_SECRET: AUTH0_SECRET,
+    AUTH0_BASE_URL: AUTH0_BASE_URL,
+    AUTH0_ISSUER_BASE_URL: AUTH0_ISSUER_BASE_URL,
+    AUTH0_CLIENT_ID: AUTH0_CLIENT_ID,
+    AUTH0_CLIENT_SECRET: AUTH0_CLIENT_SECRET,
     DATABASE_URL:
       DB_RUNTIME === "local" ? LOCAL_DATABASE_URL : PROD_DATABASE_URL,
     NODE_ENV: NODE_ENV,
