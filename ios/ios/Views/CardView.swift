@@ -34,10 +34,10 @@ struct CardView: View {
                 )
                 .padding(12)
 
-            VStack(alignment: .leading, spacing: 0) {
-                // 画像エリア（金色フレーム装飾付き）
-                ZStack {
-                    // 金色フレーム装飾（ペイント風）
+            // 画像エリア（金色フレーム装飾付き、カード全体に配置）
+            ZStack(alignment: .bottomLeading) {
+                // 金色フレーム装飾（ペイント風）
+                VStack {
                     RoundedRectangle(cornerRadius: 8)
                         .fill(
                             LinearGradient(
@@ -50,8 +50,12 @@ struct CardView: View {
                             )
                         )
                         .frame(height: 8)
-                        .offset(y: -4)
+                        .padding(.horizontal, 28)
+                        .padding(.top, 24)
+                    Spacer()
+                }
 
+                ZStack {
                     Group {
                         if card.isTaskCard {
                             taskCardContent
@@ -78,17 +82,25 @@ struct CardView: View {
                             }
                         }
                     }
-                    .frame(maxWidth: .infinity)
-                    .aspectRatio(1.0, contentMode: .fill)
                     .clipped()
-                    .cornerRadius(4)
+
+                    // テキスト視認性向上のためのグラデーションオーバーレイ
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color.black.opacity(0.75),
+                            Color.clear,
+                            Color.clear
+                        ]),
+                        startPoint: .bottom,
+                        endPoint: .top
+                    )
                 }
+                .cornerRadius(4)
                 .padding(.horizontal, 28)
-                .padding(.top, 28)
+                .padding(.top, 32)
+                .padding(.bottom, 28)
 
-                Spacer()
-
-                // テキストエリア（左下配置、白文字）
+                // テキストエリア（画像の上に重ねて配置、左下配置、白文字）
                 if let title = card.title {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(title)
@@ -103,8 +115,8 @@ struct CardView: View {
                                 .shadow(color: .black.opacity(0.5), radius: 2, x: 0, y: 1)
                         }
                     }
-                    .padding(.horizontal, 28)
-                    .padding(.bottom, 24)
+                    .padding(.horizontal, 48)
+                    .padding(.bottom, 48)
                 }
             }
         }

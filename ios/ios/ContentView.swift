@@ -183,37 +183,41 @@ struct ContentView: View {
     private func cardStackView(currentCard: Card, screenSize: CGSize) -> some View {
         let stackCards = [currentCard] + viewModel.getUpcomingCards(count: 2)
 
-        // カードサイズをFigmaデザインに合わせて拡大（画面の90%幅、70%高さ）
-        let cardWidth = screenSize.width * 0.9
+        // カードサイズを調整（画面の80%幅、70%高さ）
+        let cardWidth = screenSize.width * 0.50
         let cardHeight = screenSize.height * 0.7
 
         ZStack {
             ForEach(Array(stackCards.enumerated()), id: \.element.id) { index, stackCard in
-                Group {
-                    if index == 0 {
-                        SwipeableCardView(
-                            card: stackCard,
-                            onSwipe: { direction in
-                                viewModel.handleSwipe(direction: direction)
-                            },
-                            onSwipeProgress: { progress in
-                                swipeProgress = progress
-                            },
-                            onSwipeDirectionChange: { direction in
-                                currentSwipeDirection = direction
-                            }
-                        )
-                    } else {
-                        CardView(card: stackCard)
-                            .allowsHitTesting(false)
-                    }
+                if index == 0 {
+                    SwipeableCardView(
+                        card: stackCard,
+                        onSwipe: { direction in
+                            viewModel.handleSwipe(direction: direction)
+                        },
+                        onSwipeProgress: { progress in
+                            swipeProgress = progress
+                        },
+                        onSwipeDirectionChange: { direction in
+                            currentSwipeDirection = direction
+                        }
+                    )
+                    .frame(width: cardWidth, height: cardHeight)
+                    .scaleEffect(calculateScale(for: index))
+                    .offset(y: calculateOffset(for: index))
+                    .opacity(1.0)
+                    .zIndex(Double(stackCards.count - index))
+                    .animation(.spring(), value: swipeProgress)
+                } else {
+                    CardView(card: stackCard)
+                        .allowsHitTesting(false)
+                        .frame(width: cardWidth, height: cardHeight)
+                        .scaleEffect(calculateScale(for: index))
+                        .offset(y: calculateOffset(for: index))
+                        .opacity(0.5 - Double(index - 1) * 0.15)
+                        .zIndex(Double(stackCards.count - index))
+                        .animation(.spring(), value: swipeProgress)
                 }
-                .frame(width: cardWidth, height: cardHeight)
-                .scaleEffect(calculateScale(for: index))
-                .offset(y: calculateOffset(for: index))
-                .opacity(index == 0 ? 1.0 : 0.5 - Double(index - 1) * 0.15)
-                .zIndex(Double(stackCards.count - index))
-                .animation(.spring(), value: swipeProgress)
             }
         }
         .animation(.spring(response: 0.5, dampingFraction: 0.7), value: currentCard.id)
@@ -246,11 +250,13 @@ struct ContentView: View {
     private var micButton: some View {
         Button(action: {}) {
             Image(systemName: "mic.fill")
-                .imageScale(.large)
+                .font(.system(size: 28))
+                .foregroundColor(.white)
+                .frame(width: 70, height: 70)
+                .background(speechViewModel.isRecording ? Color.red : Color.blue)
+                .clipShape(Circle())
+                .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
         }
-        .buttonStyle(.borderedProminent)
-        .tint(speechViewModel.isRecording ? .red : .blue)
-        .controlSize(.extraLarge)
         .scaleEffect(speechViewModel.isRecording ? 1.2 : 1.0)
         .animation(.spring(response: 0.3), value: speechViewModel.isRecording)
         .simultaneousGesture(
