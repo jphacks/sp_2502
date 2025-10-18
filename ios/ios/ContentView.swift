@@ -17,6 +17,20 @@ struct ContentView: View {
                 Color(red: 0x92/255.0, green: 0, blue: 0)
                     .ignoresSafeArea()
 
+                // 背景装飾：左上のカード
+                decorativeCard
+                    .frame(width: 100, height: 140)
+                    .rotationEffect(.degrees(-25))
+                    .position(x: 60, y: 80)
+                    .opacity(0.6)
+
+                // 背景装飾：右下のカード
+                decorativeCard
+                    .frame(width: 120, height: 160)
+                    .rotationEffect(.degrees(15))
+                    .position(x: geometry.size.width - 60, y: geometry.size.height - 100)
+                    .opacity(0.5)
+
                 if viewModel.isLoading {
                     ProgressView("Loading cards...")
                         .font(.headline)
@@ -232,6 +246,24 @@ struct ContentView: View {
             if let errorMessage = speechViewModel.errorMessage {
                 Text(errorMessage)
             }
+        }
+    }
+
+    // 背景装飾用のカード
+    private var decorativeCard: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 12)
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color(red: 0.4, green: 0.3, blue: 0.25),
+                            Color(red: 0.25, green: 0.2, blue: 0.15)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .shadow(color: .black.opacity(0.4), radius: 8, x: 0, y: 4)
         }
     }
 }
