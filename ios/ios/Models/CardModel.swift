@@ -1,8 +1,3 @@
-//
-//  CardModel.swift
-//  ios
-//
-
 import Foundation
 
 enum SwipeDirection {
@@ -21,7 +16,6 @@ struct Card: Identifiable, Codable {
     let emoji: String?
     let taskText: String?
 
-    // タスクカードかどうかを判定
     var isTaskCard: Bool {
         return taskText != nil
     }

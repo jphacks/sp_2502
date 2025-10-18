@@ -1,8 +1,3 @@
-//
-//  CardView.swift
-//  ios
-//
-
 import SwiftUI
 
 struct CardView: View {
@@ -57,7 +52,6 @@ struct CardView: View {
                         .frame(height: 8)
                         .offset(y: -4)
 
-                    // 画像コンテンツ
                     Group {
                         if card.isTaskCard {
                             taskCardContent
@@ -116,22 +110,18 @@ struct CardView: View {
         }
     }
 
-    // タスクカード用のコンテンツ
     @ViewBuilder
     private var taskCardContent: some View {
         ZStack {
-            // 生成された画像を表示
             if let uiImage = loadImageFromPath(card.imageURL) {
                 Image(uiImage: uiImage)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
                     .clipped()
             } else {
-                // フォールバック
                 Color.purple.opacity(0.3)
             }
 
-            // 絵文字をオーバーレイ
             if let emoji = card.emoji {
                 VStack {
                     Spacer()

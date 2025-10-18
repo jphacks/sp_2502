@@ -1,8 +1,3 @@
-//
-//  ImageGeneratorService.swift
-//  ios
-//
-
 import UIKit
 import CoreGraphics
 import ImagePlayground
@@ -16,20 +11,16 @@ class ImageGeneratorService {
 
     private init() {}
 
-    /// タスクテキストと絵文字から画像を生成してローカルに保存
     func generateTaskImage(taskText: String, emoji: String) async -> String? {
-        // iOS 18.4以降でImageCreator APIが利用可能な場合
         if #available(iOS 18.4, *) {
             if let imagePath = await generateWithImageCreator(taskText: taskText, emoji: emoji) {
                 return imagePath
             }
-            // ImageCreator APIが失敗した場合はフォールバック
             print("⚠️ ImageCreator APIが失敗しました。Core Graphicsフォールバックに移行します。")
         } else {
             print("ℹ️ iOS 18.4未満のため、Core Graphicsで画像を生成します。")
         }
 
-        // iOS 18.4未満、または ImageCreator API失敗時のフォールバック
         let result = await generateWithCoreGraphics(taskText: taskText, emoji: emoji)
         if result != nil {
             print("✅ Core Graphicsで画像生成成功")
@@ -37,16 +28,14 @@ class ImageGeneratorService {
         return result
     }
 
-    /// ImageCreator APIを使用した画像生成 (iOS 18.4+)
     @available(iOS 18.4, *)
     private func generateWithImageCreator(taskText: String, emoji: String, retryCount: Int = 0) async -> String? {
         let maxRetries = 1
 
         do {
-            // プロンプトを作成
-            let prompt = createPromptForTask(taskText: taskText, emoji: emoji)
+            let translatedText = translateTaskText(taskText)
+            let prompt = createPromptForTask(taskText: translatedText, emoji: emoji)
 
-            // ImageCreatorを取得または作成
             let creator: ImageCreator
             if let cached = cachedImageCreator as? ImageCreator {
                 creator = cached
@@ -57,17 +46,14 @@ class ImageGeneratorService {
                 cachedImageCreator = creator as Any
             }
 
-            // スタイルを選択（タスクの種類に応じて）
-            let style = selectImageStyle(for: taskText)
+            let style = selectImageStyle(for: translatedText)
 
-            // 画像を生成（AsyncSequenceで返される）
             let images = creator.images(
                 for: [.text(prompt)],
                 style: style,
                 limit: 1
             )
 
-            // 最初の画像を取得
             for try await image in images {
                 let cgImage = image.cgImage
                 let uiImage = UIImage(cgImage: cgImage)
@@ -76,16 +62,19 @@ class ImageGeneratorService {
             }
 
             return nil
+        } catch ImageCreator.Error.unsupportedLanguage {
+            print("❌ サポートされていない言語が検出されました（日本語が含まれている可能性）")
+            print("   翻訳後のテキスト: \(translateTaskText(taskText))")
+            cachedImageCreator = nil
+            return nil
         } catch ImageCreator.Error.notSupported {
             print("⚠️ このデバイスではImage Creationがサポートされていません")
             cachedImageCreator = nil
             return nil
         } catch let error as NSError where error.domain == "NSCocoaErrorDomain" && error.code == 4099 {
-            // 接続エラー（Code=4099）を検出
             print("🔌 ImageCreator接続エラー (Code=4099): システムサービスへの接続が中断されました")
-            cachedImageCreator = nil // キャッシュをクリア
+            cachedImageCreator = nil
 
-            // リトライ
             if retryCount < maxRetries {
                 print("🔄 リトライします... (試行 \(retryCount + 1)/\(maxRetries))")
                 try? await Task.sleep(nanoseconds: 500_000_000) // 0.5秒待機
@@ -97,85 +86,77 @@ class ImageGeneratorService {
         } catch {
             print("❌ ImageCreator API エラー: \(error.localizedDescription)")
             print("   エラー詳細: \(error)")
-            cachedImageCreator = nil // エラー時はキャッシュをクリア
+            cachedImageCreator = nil
             return nil
         }
     }
 
-    /// タスク内容に応じた画像スタイルを選択
+    private func translateTaskText(_ taskText: String) -> String {
+        if let translatedText = TranslationService.shared.translateToEnglish(japaneseText: taskText) {
+            return translatedText
+        }
+        print("⚠️ 翻訳に失敗しました。元のテキストを使用します: \(taskText)")
+        return taskText
+    }
+
     @available(iOS 18.4, *)
     private func selectImageStyle(for taskText: String) -> ImagePlaygroundStyle {
-        // タスクの種類に応じてスタイルを選択
-        if taskText.contains("絵") || taskText.contains("アート") || taskText.contains("イラスト") {
+        let lowerText = taskText.lowercased()
+        if lowerText.contains("draw") || lowerText.contains("art") || lowerText.contains("illustration") || lowerText.contains("paint") {
             return .illustration
-        } else if taskText.contains("メモ") || taskText.contains("スケッチ") {
+        } else if lowerText.contains("memo") || lowerText.contains("note") || lowerText.contains("sketch") || lowerText.contains("draft") {
             return .sketch
         } else {
-            // デフォルトはアニメーションスタイル
             return .animation
         }
     }
 
-    /// タスクテキストから画像生成用のプロンプトを作成
     private func createPromptForTask(taskText: String, emoji: String) -> String {
-        // タスクの内容に応じたビジュアルスタイルを決定
         var styleKeywords = [String]()
+        let lowerText = taskText.lowercased()
 
-        if taskText.contains("勉強") || taskText.contains("レポート") || taskText.contains("課題") {
+        if lowerText.contains("study") || lowerText.contains("report") || lowerText.contains("assignment") || lowerText.contains("homework") || lowerText.contains("learn") {
             styleKeywords.append("books, study desk, academic atmosphere")
-        } else if taskText.contains("仕事") || taskText.contains("会議") {
+        } else if lowerText.contains("work") || lowerText.contains("meeting") || lowerText.contains("business") || lowerText.contains("office") {
             styleKeywords.append("business, professional workspace, modern office")
-        } else if taskText.contains("運動") || taskText.contains("ジム") {
+        } else if lowerText.contains("exercise") || lowerText.contains("gym") || lowerText.contains("sport") || lowerText.contains("fitness") || lowerText.contains("run") {
             styleKeywords.append("fitness, sports, active lifestyle")
-        } else if taskText.contains("料理") || taskText.contains("買い物") {
+        } else if lowerText.contains("cook") || lowerText.contains("food") || lowerText.contains("shopping") || lowerText.contains("grocery") {
             styleKeywords.append("food, cooking, kitchen")
-        } else if taskText.contains("音楽") {
+        } else if lowerText.contains("music") || lowerText.contains("piano") || lowerText.contains("guitar") || lowerText.contains("instrument") {
             styleKeywords.append("music, instruments, musical notes")
         } else {
-            styleKeywords.append("colorful, creative, abstract")
+            styleKeywords.append("colorful, creative, abstract, daily task")
         }
 
-        // プロンプトを構築
+        // プロンプトを構築（完全に英語のみ）
+        // 絵文字は安全だが、念のため日本語文字が含まれていないことを確認
         let style = styleKeywords.joined(separator: ", ")
-        return "A simple, clean illustration representing: \(style). Minimalist style with gradient background. Include \(emoji) emoji theme."
+        let prompt = "A simple, clean illustration representing: \(style). Minimalist style with gradient background."
+
+        print("📝 生成プロンプト: \(prompt)")
+        return prompt
     }
 
     /// Core Graphicsを使用した画像生成（フォールバック）
     private func generateWithCoreGraphics(taskText: String, emoji: String) async -> String? {
-        // 画像サイズ（正方形）
         let size = CGSize(width: 400, height: 400)
-
-        // グラデーション色を選択（タスクの種類に応じて）
         let gradientColors = selectGradientColors(for: taskText)
-
-        // UIGraphicsImageRendererを使用して画像を生成
         let renderer = UIGraphicsImageRenderer(size: size)
         let image = renderer.image { context in
             let cgContext = context.cgContext
 
-            // グラデーション背景を描画
             drawGradientBackground(in: cgContext, size: size, colors: gradientColors)
-
-            // タスク内容に応じた装飾を追加
             drawTaskSpecificDecorations(for: taskText, in: cgContext, size: size)
-
-            // 絵文字を大きく中央に描画
             drawEmoji(emoji, in: cgContext, size: size)
-
-            // タスクテキストを下部に描画
             drawTaskText(taskText, in: cgContext, size: size)
-
-            // 基本的な装飾要素を追加
             drawDecorations(in: cgContext, size: size)
         }
 
-        // 画像を一時ディレクトリに保存
         return saveImageToCache(image, taskId: UUID().uuidString)
     }
 
-    // グラデーションの色を選択
     private func selectGradientColors(for taskText: String) -> [UIColor] {
-        // キーワードに基づいて色を選択
         if taskText.contains("勉強") || taskText.contains("レポート") || taskText.contains("課題") {
             return [
                 UIColor(red: 0.4, green: 0.6, blue: 0.9, alpha: 1.0),
@@ -202,7 +183,6 @@ class ImageGeneratorService {
                 UIColor(red: 0.7, green: 0.2, blue: 0.2, alpha: 1.0)
             ]
         } else {
-            // デフォルト（紫系）
             return [
                 UIColor(red: 0.7, green: 0.5, blue: 0.9, alpha: 1.0),
                 UIColor(red: 0.5, green: 0.3, blue: 0.7, alpha: 1.0)
@@ -210,7 +190,6 @@ class ImageGeneratorService {
         }
     }
 
-    // グラデーション背景を描画
     private func drawGradientBackground(in context: CGContext, size: CGSize, colors: [UIColor]) {
         let colorSpace = CGColorSpaceCreateDeviceRGB()
         let locations: [CGFloat] = [0.0, 1.0]
@@ -226,7 +205,6 @@ class ImageGeneratorService {
         context.drawLinearGradient(gradient, start: startPoint, end: endPoint, options: [])
     }
 
-    // 絵文字を描画
     private func drawEmoji(_ emoji: String, in context: CGContext, size: CGSize) {
         let emojiFont = UIFont.systemFont(ofSize: 120)
         let attributes: [NSAttributedString.Key: Any] = [
@@ -246,9 +224,7 @@ class ImageGeneratorService {
         emojiString.draw(in: emojiRect, withAttributes: attributes)
     }
 
-    // タスクテキストを描画
     private func drawTaskText(_ text: String, in context: CGContext, size: CGSize) {
-        // テキストを適切な長さに省略
         let displayText = text.count > 20 ? String(text.prefix(20)) + "..." : text
 
         let textFont = UIFont.boldSystemFont(ofSize: 16)
@@ -273,9 +249,7 @@ class ImageGeneratorService {
         textString.draw(in: textRect, withAttributes: attributes)
     }
 
-    // タスク内容に応じた装飾を描画
     private func drawTaskSpecificDecorations(for taskText: String, in context: CGContext, size: CGSize) {
-        // 数学・勉強関連
         if taskText.contains("数学") || taskText.contains("算数") {
             drawMathDecorations(in: context, size: size)
         } else if taskText.contains("英語") || taskText.contains("言語") {
@@ -293,7 +267,6 @@ class ImageGeneratorService {
         }
     }
 
-    // 数学関連の装飾
     private func drawMathDecorations(in context: CGContext, size: CGSize) {
         let mathSymbols = ["π", "∫", "Σ", "√", "∞", "≈", "≠", "±", "÷", "×", "∂", "∇"]
         let font = UIFont.systemFont(ofSize: 24, weight: .light)
@@ -302,7 +275,6 @@ class ImageGeneratorService {
             .foregroundColor: UIColor.white.withAlphaComponent(0.25)
         ]
 
-        // ランダムに数式記号を配置
         for _ in 0..<12 {
             let symbol = mathSymbols.randomElement() ?? "π"
             let x = CGFloat.random(in: 20...size.width - 50)
@@ -311,7 +283,6 @@ class ImageGeneratorService {
             symbolString.draw(at: CGPoint(x: x, y: y), withAttributes: attributes)
         }
 
-        // グリッド線を描画
         context.setStrokeColor(UIColor.white.withAlphaComponent(0.1).cgColor)
         context.setLineWidth(1)
         for i in 0..<5 {
@@ -322,7 +293,6 @@ class ImageGeneratorService {
         context.strokePath()
     }
 
-    // 言語学習関連の装飾
     private func drawLanguageDecorations(in context: CGContext, size: CGSize) {
         let letters = ["A", "B", "C", "Q", "W", "E", "R", "T", "Y", "U"]
         let font = UIFont.systemFont(ofSize: 30, weight: .ultraLight)
@@ -340,9 +310,7 @@ class ImageGeneratorService {
         }
     }
 
-    // 一般的な勉強関連の装飾
     private func drawStudyDecorations(in context: CGContext, size: CGSize) {
-        // ノートの罫線風
         context.setStrokeColor(UIColor.white.withAlphaComponent(0.15).cgColor)
         context.setLineWidth(1)
         for i in 0..<8 {
@@ -352,7 +320,6 @@ class ImageGeneratorService {
         }
         context.strokePath()
 
-        // マーカー線
         context.setStrokeColor(UIColor.white.withAlphaComponent(0.1).cgColor)
         context.setLineWidth(2)
         context.move(to: CGPoint(x: 40, y: 0))
@@ -360,9 +327,7 @@ class ImageGeneratorService {
         context.strokePath()
     }
 
-    // 仕事・ビジネス関連の装飾
     private func drawBusinessDecorations(in context: CGContext, size: CGSize) {
-        // チェックマークや箇条書き風
         let font = UIFont.systemFont(ofSize: 20, weight: .light)
         let attributes: [NSAttributedString.Key: Any] = [
             .font: font,
@@ -378,7 +343,6 @@ class ImageGeneratorService {
             symbolString.draw(at: CGPoint(x: x, y: y), withAttributes: attributes)
         }
 
-        // グラフ風の線
         context.setStrokeColor(UIColor.white.withAlphaComponent(0.15).cgColor)
         context.setLineWidth(2)
         context.move(to: CGPoint(x: size.width * 0.6, y: size.height * 0.7))
@@ -388,9 +352,7 @@ class ImageGeneratorService {
         context.strokePath()
     }
 
-    // 運動・スポーツ関連の装飾
     private func drawSportsDecorations(in context: CGContext, size: CGSize) {
-        // ダイナミックな円弧
         context.setStrokeColor(UIColor.white.withAlphaComponent(0.2).cgColor)
         context.setLineWidth(3)
         for _ in 0..<4 {
@@ -402,9 +364,7 @@ class ImageGeneratorService {
         context.strokePath()
     }
 
-    // 料理関連の装飾
     private func drawCookingDecorations(in context: CGContext, size: CGSize) {
-        // 円形のパターン（食材風）
         context.setFillColor(UIColor.white.withAlphaComponent(0.15).cgColor)
         for _ in 0..<8 {
             let x = CGFloat.random(in: 0...size.width)
@@ -414,7 +374,6 @@ class ImageGeneratorService {
         }
     }
 
-    // 音楽関連の装飾
     private func drawMusicDecorations(in context: CGContext, size: CGSize) {
         let musicSymbols = ["♪", "♫", "♬", "𝄞"]
         let font = UIFont.systemFont(ofSize: 28, weight: .light)
@@ -431,7 +390,6 @@ class ImageGeneratorService {
             symbolString.draw(at: CGPoint(x: x, y: y), withAttributes: attributes)
         }
 
-        // 五線譜風の線
         context.setStrokeColor(UIColor.white.withAlphaComponent(0.15).cgColor)
         context.setLineWidth(1)
         for i in 0..<5 {
@@ -442,14 +400,11 @@ class ImageGeneratorService {
         context.strokePath()
     }
 
-    // 装飾要素を描画
     private func drawDecorations(in context: CGContext, size: CGSize) {
-        // 半透明の円を描画
         context.setFillColor(UIColor.white.withAlphaComponent(0.1).cgColor)
         context.fillEllipse(in: CGRect(x: -50, y: -50, width: 150, height: 150))
         context.fillEllipse(in: CGRect(x: size.width - 100, y: size.height - 100, width: 150, height: 150))
 
-        // 小さな点を描画
         context.setFillColor(UIColor.white.withAlphaComponent(0.2).cgColor)
         for _ in 0..<15 {
             let x = CGFloat.random(in: 0...size.width)
@@ -459,7 +414,6 @@ class ImageGeneratorService {
         }
     }
 
-    // 画像をキャッシュディレクトリに保存
     private func saveImageToCache(_ image: UIImage, taskId: String) -> String? {
         guard let data = image.pngData() else {
             return nil
@@ -482,7 +436,6 @@ class ImageGeneratorService {
         }
     }
 
-    /// キャッシュされた画像を削除
     func clearCache() {
         guard let cacheDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first else {
             return

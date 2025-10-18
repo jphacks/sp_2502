@@ -1,8 +1,3 @@
-//
-//  MockDataProvider.swift
-//  ios
-//
-
 import Foundation
 
 class MockDataProvider {

@@ -1,8 +1,3 @@
-//
-//  SpeechRecognizerViewModel.swift
-//  ios
-//
-
 import Foundation
 import Speech
 import AVFoundation
@@ -22,7 +17,6 @@ class SpeechRecognizerViewModel: ObservableObject {
     // 認識完了時のコールバック
     var onRecognitionCompleted: ((String) -> Void)?
 
-    // 権限チェック
     func checkPermissions() async -> Bool {
         // 音声認識権限のチェック
         let speechStatus = await requestSpeechRecognitionAuthorization()
@@ -53,7 +47,6 @@ class SpeechRecognizerViewModel: ObservableObject {
         await AVAudioApplication.requestRecordPermission()
     }
 
-    // 録音開始
     func startRecording() async {
         // 既存のタスクをキャンセル
         if recognitionTask != nil {
@@ -61,7 +54,6 @@ class SpeechRecognizerViewModel: ObservableObject {
             recognitionTask = nil
         }
 
-        // 権限チェック
         guard await checkPermissions() else {
             return
         }
@@ -115,7 +107,6 @@ class SpeechRecognizerViewModel: ObservableObject {
             recognitionRequest.append(buffer)
         }
 
-        // 録音開始
         audioEngine.prepare()
         do {
             try audioEngine.start()
@@ -127,7 +118,6 @@ class SpeechRecognizerViewModel: ObservableObject {
         }
     }
 
-    // 録音停止
     func stopRecording() {
         audioEngine?.stop()
         recognitionRequest?.endAudio()
@@ -137,8 +127,6 @@ class SpeechRecognizerViewModel: ObservableObject {
         // 認識結果をログに出力
         if !recognizedText.isEmpty {
             print("認識されたテキスト: \(recognizedText)")
-
-            // コールバックを呼び出し
             onRecognitionCompleted?(recognizedText)
         }
     }

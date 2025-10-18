@@ -36,15 +36,6 @@ struct ContentView: View {
                     ProgressView("Loading cards...")
                         .font(.headline)
                         .foregroundColor(.white)
-                } else if viewModel.isGeneratingCard {
-                    VStack(spacing: 20) {
-                        ProgressView()
-                            .scaleEffect(1.5)
-                            .tint(.white)
-                        Text("カードを生成中...")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                    }
                 } else if let errorMessage = viewModel.errorMessage {
                     VStack(spacing: 20) {
                         Image(systemName: "exclamationmark.triangle")
@@ -64,10 +55,17 @@ struct ContentView: View {
                     }
                 } else if let card = viewModel.currentCard {
                     // カードスタック表示（中央に大きく配置）
-                    cardStackView(currentCard: card, screenSize: geometry.size)
-                        .offset(y: -30)  // カードを上に移動
+                    ZStack {
+                        cardStackView(currentCard: card, screenSize: geometry.size)
 
-                    // 上部右：Deleteボタン
+                        // カード生成中のプログレスオーバーレイ
+                        if viewModel.isGeneratingCard {
+                            generationProgressOverlay
+                        }
+                    }
+                    .offset(y: -30)  // カードを上に移動
+
+                    // 上部中央：Deleteボタン
                     VStack {
                         HStack {
                             Spacer()
@@ -76,8 +74,8 @@ struct ContentView: View {
                                 color: .red,
                                 action: { viewModel.handleDelete() }
                             )
-                            .padding(.top, 60)
-                            .padding(.trailing, 30)
+                            .padding(.top, 20)
+                            Spacer()
                         }
                         Spacer()
                     }
@@ -363,6 +361,40 @@ struct ContentView: View {
         case .left:
             return Color(red: 1.0, green: 0.6, blue: 0.4)
         }
+    }
+
+    // カード生成中のプログレスオーバーレイ
+    private var generationProgressOverlay: some View {
+        ZStack {
+            // 半透明の背景でカードを暗くする
+            Color.black.opacity(0.6)
+                .cornerRadius(20)
+
+            // 円形プログレスバーと進行状況テキスト
+            VStack(spacing: 24) {
+                // 円形プログレスバー
+                ZStack {
+                    Circle()
+                        .stroke(Color.white.opacity(0.3), lineWidth: 6)
+                        .frame(width: 80, height: 80)
+
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .scaleEffect(1.8)
+                }
+
+                // 進行状況テキスト
+                if !viewModel.generationProgress.isEmpty {
+                    Text(viewModel.generationProgress)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+                }
+            }
+        }
+        .transition(.opacity)
+        .animation(.easeInOut(duration: 0.3), value: viewModel.isGeneratingCard)
     }
 }
 

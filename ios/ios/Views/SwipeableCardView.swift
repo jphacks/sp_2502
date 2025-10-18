@@ -1,8 +1,3 @@
-//
-//  SwipeableCardView.swift
-//  ios
-//
-
 import SwiftUI
 
 struct SwipeableCardView: View {

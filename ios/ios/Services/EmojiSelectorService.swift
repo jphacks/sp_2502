@@ -1,8 +1,3 @@
-//
-//  EmojiSelectorService.swift
-//  ios
-//
-
 import Foundation
 
 class EmojiSelectorService {
@@ -90,7 +85,6 @@ class EmojiSelectorService {
     // デフォルトの絵文字（マッチするものがない場合）
     private let defaultEmojis = ["📌", "✅", "⭐", "💡", "🎯"]
 
-    /// タスクテキストから最適な絵文字を選択
     func selectEmoji(for taskText: String) -> String {
         // キーワードマッチング
         for (keyword, emoji) in emojiMappings {
@@ -103,7 +97,6 @@ class EmojiSelectorService {
         return defaultEmojis.randomElement() ?? "📌"
     }
 
-    /// タスクテキストから複数のキーワードに基づいて絵文字を選択（優先度付き）
     func selectEmojiWithPriority(for taskText: String) -> String {
         // 優先度の高いキーワードから順にチェック
         let priorityKeywords = ["締切", "期限", "緊急", "重要", "急ぎ"]
@@ -114,7 +107,6 @@ class EmojiSelectorService {
             }
         }
 
-        // 通常のマッチング
         return selectEmoji(for: taskText)
     }
 }

@@ -1,8 +1,3 @@
-//
-//  CardViewModel.swift
-//  ios
-//
-
 import Foundation
 import SwiftUI
 import Combine
@@ -12,6 +7,7 @@ class CardViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var isGeneratingCard = false
+    @Published var generationProgress: String = "" // 生成プロセスの進行状況を表示
 
     private var cards: [Card] = []
     private let apiService = APIService.shared
@@ -120,17 +116,21 @@ class CardViewModel: ObservableObject {
         isGeneratingCard = true
         errorMessage = nil
 
-        // 絵文字を選択
+        // ステップ1: 絵文字を選択
+        generationProgress = "絵文字を選択中..."
         let emoji = emojiSelector.selectEmojiWithPriority(for: taskText)
 
-        // 画像を生成
+        // ステップ2: 翻訳と画像を生成
+        generationProgress = "画像を生成中..."
         guard let imagePath = await imageGenerator.generateTaskImage(taskText: taskText, emoji: emoji) else {
             errorMessage = "画像の生成に失敗しました"
             isGeneratingCard = false
+            generationProgress = ""
             return
         }
 
-        // タスクカードを作成
+        // ステップ3: タスクカードを作成
+        generationProgress = "カードを作成中..."
         let taskCard = Card(
             id: UUID().uuidString,
             imageURL: imagePath,
@@ -146,5 +146,6 @@ class CardViewModel: ObservableObject {
         print("✅ タスクカード作成完了: \(taskText)")
 
         isGeneratingCard = false
+        generationProgress = ""
     }
 }
