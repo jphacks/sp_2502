@@ -184,7 +184,7 @@ struct ContentView: View {
         let stackCards = [currentCard] + viewModel.getUpcomingCards(count: 2)
 
         // カードサイズを調整（画面の80%幅、70%高さ）
-        let cardWidth = screenSize.width * 0.50
+        let cardWidth = screenSize.width * 0.80
         let cardHeight = screenSize.height * 0.7
 
         ZStack {
