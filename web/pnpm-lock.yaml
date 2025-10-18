@@ -41,6 +41,9 @@ importers:
       drizzle-orm:
         specifier: ^0.41.0
         version: 0.41.0(@neondatabase/serverless@1.0.2)(@types/pg@8.15.5)(gel@2.1.1)(postgres@3.4.7)
+      jose:
+        specifier: ^6.1.0
+        version: 6.1.0
       next:
         specifier: ^15.2.3
         version: 15.5.4(@babel/core@7.28.4)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
