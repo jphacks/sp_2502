@@ -52,7 +52,7 @@ export default async function Home() {
                     bg="whiteAlpha.200"
                     fontWeight="semibold"
                     _hover={{ bg: "whiteAlpha.300" }}>
-                    <Link href="/auth/logout">ログアウト</Link>
+                    <Link href="/auth/logout" prefetch={false}>ログアウト</Link>
                   </Button>
                 </HStack>
               )}
