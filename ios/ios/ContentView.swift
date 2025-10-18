@@ -11,92 +11,105 @@ struct ContentView: View {
     @State private var swipeProgress: CGFloat = 0
 
     var body: some View {
-        ZStack {
-            Color(red: 0.95, green: 0.95, blue: 0.95)
-                .ignoresSafeArea()
+        GeometryReader { geometry in
+            ZStack {
+                // 背景色（Figmaデザインに合わせて赤色）
+                Color(red: 0x92/255.0, green: 0, blue: 0)
+                    .ignoresSafeArea()
 
-            if viewModel.isLoading {
-                ProgressView("Loading cards...")
-                    .font(.headline)
-            } else if viewModel.isGeneratingCard {
-                VStack(spacing: 20) {
-                    ProgressView()
-                        .scaleEffect(1.5)
-                    Text("カードを生成中...")
+                if viewModel.isLoading {
+                    ProgressView("Loading cards...")
                         .font(.headline)
-                        .foregroundColor(.gray)
-                }
-            } else if let errorMessage = viewModel.errorMessage {
-                VStack(spacing: 20) {
-                    Image(systemName: "exclamationmark.triangle")
-                        .font(.system(size: 60))
-                        .foregroundColor(.red)
-                    Text(errorMessage)
-                        .font(.headline)
-                        .foregroundColor(.red)
-                        .multilineTextAlignment(.center)
-                        .padding()
-                    Button("Retry") {
-                        Task {
-                            await viewModel.loadCards()
-                        }
+                        .foregroundColor(.white)
+                } else if viewModel.isGeneratingCard {
+                    VStack(spacing: 20) {
+                        ProgressView()
+                            .scaleEffect(1.5)
+                            .tint(.white)
+                        Text("カードを生成中...")
+                            .font(.headline)
+                            .foregroundColor(.white)
                     }
-                    .buttonStyle(.borderedProminent)
-                }
-            } else if let card = viewModel.currentCard {
-                VStack(spacing: 0) {
-                    actionButton(
-                        icon: "trash",
-                        color: .red,
-                        action: { viewModel.handleDelete() }
-                    )
-                    .padding(.bottom, 30)
-
-                    HStack(spacing: 40) {
-                        actionButton(
-                            icon: "arrow.uturn.backward",
-                            color: .blue,
-                            action: { viewModel.handleUndo() }
-                        )
-
-                        // カードスタック表示
-                        GeometryReader { geometry in
-                            cardStackView(currentCard: card, screenSize: geometry.size)
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if let errorMessage = viewModel.errorMessage {
+                    VStack(spacing: 20) {
+                        Image(systemName: "exclamationmark.triangle")
+                            .font(.system(size: 60))
+                            .foregroundColor(.white)
+                        Text(errorMessage)
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .multilineTextAlignment(.center)
+                            .padding()
+                        Button("Retry") {
+                            Task {
+                                await viewModel.loadCards()
+                            }
                         }
+                        .buttonStyle(.borderedProminent)
+                    }
+                } else if let card = viewModel.currentCard {
+                    // カードスタック表示（中央に大きく配置）
+                    cardStackView(currentCard: card, screenSize: geometry.size)
 
-                        actionButton(
-                            icon: "hand.thumbsup.fill",
-                            color: .green,
-                            action: { viewModel.handleLike() }
-                        )
+                    // 上部右：Deleteボタン
+                    VStack {
+                        HStack {
+                            Spacer()
+                            actionButton(
+                                icon: "trash",
+                                color: .red,
+                                action: { viewModel.handleDelete() }
+                            )
+                            .padding(.top, 60)
+                            .padding(.trailing, 30)
+                        }
+                        Spacer()
                     }
 
-                    actionButton(
-                        icon: "forward.end",
-                        color: .orange,
-                        action: { viewModel.handleSkip() }
-                    )
-                    .padding(.top, 30)
-                }
-            } else {
-                VStack(spacing: 20) {
-                    Image(systemName: "photo.on.rectangle.angled")
-                        .font(.system(size: 60))
-                        .foregroundColor(.gray)
-                    Text("No more cards")
-                        .font(.headline)
-                        .foregroundColor(.gray)
-                }
-            }
+                    // 左下：Undoボタン
+                    VStack {
+                        Spacer()
+                        HStack {
+                            actionButton(
+                                icon: "arrow.uturn.backward",
+                                color: Color(red: 1.0, green: 0.6, blue: 0.4),
+                                action: { viewModel.handleUndo() }
+                            )
+                            .padding(.leading, 30)
+                            .padding(.bottom, 120)
+                            Spacer()
+                        }
+                    }
 
-            // マイク入力ボタン（右下に配置）
-            VStack {
-                Spacer()
-                HStack {
+                    // 右下：Likeボタン
+                    VStack {
+                        Spacer()
+                        HStack {
+                            Spacer()
+                            actionButton(
+                                icon: "hand.thumbsup.fill",
+                                color: .green,
+                                action: { viewModel.handleLike() }
+                            )
+                            .padding(.trailing, 30)
+                            .padding(.bottom, 120)
+                        }
+                    }
+                } else {
+                    VStack(spacing: 20) {
+                        Image(systemName: "photo.on.rectangle.angled")
+                            .font(.system(size: 60))
+                            .foregroundColor(.white)
+                        Text("No more cards")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                    }
+                }
+
+                // マイク入力ボタン（下部中央に配置）
+                VStack {
                     Spacer()
                     micButton
-                        .padding(.trailing, 20)
                         .padding(.bottom, 50)
                 }
             }
@@ -129,9 +142,9 @@ struct ContentView: View {
     private func cardStackView(currentCard: Card, screenSize: CGSize) -> some View {
         let stackCards = [currentCard] + viewModel.getUpcomingCards(count: 2)
 
-        // カードサイズを3:2の比率で設定（画面幅の75%基準）
-        let cardWidth = screenSize.width * 0.75
-        let cardHeight = cardWidth * (2.0 / 3.0)
+        // カードサイズをFigmaデザインに合わせて拡大（画面の90%幅、70%高さ）
+        let cardWidth = screenSize.width * 0.9
+        let cardHeight = screenSize.height * 0.7
 
         ZStack {
             ForEach(Array(stackCards.enumerated()), id: \.element.id) { index, stackCard in
