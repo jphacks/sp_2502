@@ -29,6 +29,16 @@ import { db } from "@/server/db";
 export const createTRPCContext = async (opts: { headers: Headers }) => {
   const session = await getSession();
 
+  // Debug logging for Vercel
+  if (process.env.NODE_ENV === "production") {
+    console.log("[tRPC Context] Session status:", {
+      hasSession: !!session,
+      hasUser: !!session?.user,
+      userId: session?.user?.sub,
+      source: opts.headers.get("x-trpc-source"),
+    });
+  }
+
   return {
     db,
     session,
@@ -121,7 +131,17 @@ export const publicProcedure = t.procedure.use(timingMiddleware);
 export const protectedProcedure = t.procedure
   .use(timingMiddleware)
   .use(async ({ ctx, next }) => {
+    // Debug logging for Vercel
+    if (process.env.NODE_ENV === "production") {
+      console.log("[protectedProcedure] Auth check:", {
+        hasSession: !!ctx.session,
+        hasUser: !!ctx.session?.user,
+        userId: ctx.session?.user?.sub,
+      });
+    }
+
     if (!ctx.session?.user) {
+      console.error("[protectedProcedure] UNAUTHORIZED: No session or user");
       throw new TRPCError({ code: "UNAUTHORIZED" });
     }
 
@@ -135,7 +155,10 @@ export const protectedProcedure = t.procedure
     });
 
     if (!userResult.success) {
-      console.error("Failed to sync user:", userResult.error);
+      console.error(
+        "[protectedProcedure] Failed to sync user:",
+        userResult.error,
+      );
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: "Failed to sync user data",
