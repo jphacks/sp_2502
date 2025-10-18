@@ -1,8 +1,3 @@
-//
-//  TranslationService.swift
-//  ios
-//
-
 import Foundation
 import NaturalLanguage
 
@@ -110,8 +105,8 @@ class TranslationService {
         // キーワードが見つかった場合、それらを組み合わせて英語フレーズを作成
         if foundKeywords {
             let translatedText = translatedWords.joined(separator: " ")
-            // 日本語文字が含まれていないことを確認
-            let cleanedText = removeJapaneseCharacters(from: translatedText)
+            // a-zA-Zとスペース以外の文字を全て削除
+            let cleanedText = removeNonEnglishCharacters(from: translatedText)
             print("✅ 簡易翻訳完了: \(japaneseText) → \(cleanedText)")
             return cleanedText
         }
@@ -122,24 +117,40 @@ class TranslationService {
         return "daily task work activity"
     }
 
-    /// テキストから日本語文字を除去して英語のみにする
+    /// テキストからa-zA-Zとスペース以外の文字を除去して英語のみにする
     /// - Parameter text: 元のテキスト
-    /// - Returns: 日本語文字を除去したテキスト
-    func removeJapaneseCharacters(from text: String) -> String {
-        // 日本語文字の範囲（ひらがな、カタカナ、漢字）を定義
-        let japaneseCharacterSet = CharacterSet(charactersIn: "\u{3040}"..."\u{309F}") // ひらがな
-            .union(CharacterSet(charactersIn: "\u{30A0}"..."\u{30FF}")) // カタカナ
-            .union(CharacterSet(charactersIn: "\u{4E00}"..."\u{9FAF}")) // 漢字
-            .union(CharacterSet(charactersIn: "\u{3400}"..."\u{4DBF}")) // 漢字拡張A
+    /// - Returns: 英語のみのテキスト（a-zA-Zとスペースのみ）
+    func removeNonEnglishCharacters(from text: String) -> String {
+        // a-zA-Zとスペースのみを許可
+        let allowedCharacterSet = CharacterSet.letters.union(CharacterSet(charactersIn: " "))
 
-        // 日本語文字を除去
-        let filtered = text.unicodeScalars.filter { !japaneseCharacterSet.contains($0) }
-        let result = String(String.UnicodeScalarView(filtered)).trimmingCharacters(in: .whitespacesAndNewlines)
+        // a-zA-Z以外のアルファベット文字も含まれる可能性があるため、より厳格にフィルタリング
+        let englishOnly = text.filter { char in
+            // a-zA-Z (ASCII 65-90, 97-122) またはスペース (ASCII 32) のみを許可
+            let asciiValue = char.asciiValue ?? 0
+            return (asciiValue >= 65 && asciiValue <= 90) ||  // A-Z
+                   (asciiValue >= 97 && asciiValue <= 122) || // a-z
+                   (asciiValue == 32)                          // スペース
+        }
+
+        // 複数のスペースを1つにまとめ、前後の空白を削除
+        let result = englishOnly
+            .components(separatedBy: .whitespaces)
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
 
         if result.isEmpty {
             return "task"
         }
 
         return result
+    }
+
+    /// テキストから日本語文字を除去して英語のみにする（後方互換性のため残す）
+    /// - Parameter text: 元のテキスト
+    /// - Returns: 日本語文字を除去したテキスト
+    func removeJapaneseCharacters(from text: String) -> String {
+        // removeNonEnglishCharacters を使用する方がより厳格
+        return removeNonEnglishCharacters(from: text)
     }
 }
