@@ -1,0 +1,75 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/post-edit-check.sh",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(fd:*)",
+      "Bash(cat:*)",
+      "Bash(gh issue view *)",
+      "Bash(gh issue list *)",
+      "Bash(gh pr view *)",
+      "Bash(gh pr list *)",
+      "Bash(gh pr create *)",
+      "Bash(pnpm install)",
+      "Bash(pnpm dev)",
+      "Bash(pnpm dev:all)",
+      "Bash(pnpm build)",
+      "Bash(pnpm typecheck)",
+      "Bash(pnpm lint)",
+      "Bash(pnpm lint:fix)",
+      "Bash(pnpm format)",
+      "Bash(pnpm format:check)",
+      "Bash(pnpm db:push)",
+      "Bash(pnpm db:studio)",
+      "Bash(docker compose up -d)",
+      "Bash(docker compose up)",
+      "Bash(docker compose down)",
+      "Bash(docker compose down -v)",
+      "Bash(docker compose logs)",
+      "Bash(docker compose logs -f)",
+      "Bash(trash:*)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_snapshot",
+      "mcp__playwright__browser_click",
+      "mcp__playwright__browser_type",
+      "mcp__playwright__browser_take_screenshot",
+      "mcp__playwright__browser_console_messages",
+      "mcp__playwright__browser_network_requests",
+      "mcp__playwright__browser_wait_for",
+      "mcp__chakra-ui__installation",
+      "mcp__chakra-ui__get_component_example",
+      "mcp__chakra-ui__get_component_props",
+      "mcp__chakra-ui__list_components",
+      "mcp__chakra-ui__get_theme",
+      "mcp__chakra-ui__customize_theme"
+    ],
+    "deny": ["Bash(pnpm ci-check)", "Bash(rm -rf *)"],
+    "ask": [
+      "Bash(pnpm add:*)",
+      "Bash(pnpm remove:*)",
+      "Bash(git push)",
+      "Bash(git commit)",
+      "Bash(git merge)"
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "context7",
+    "playwright",
+    "figma-dev-mode-mcp-server",
+    "chakra-ui"
+  ]
+}
