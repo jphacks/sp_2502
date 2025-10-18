@@ -8,11 +8,18 @@ import SwiftUI
 struct SwipeableCardView: View {
     let card: Card
     let onSwipe: (SwipeDirection) -> Void
+    let onSwipeProgress: ((CGFloat) -> Void)?
 
     @State private var offset = CGSize.zero
     @State private var isDragging = false
 
     private let swipeThreshold: CGFloat = 100
+
+    init(card: Card, onSwipe: @escaping (SwipeDirection) -> Void, onSwipeProgress: ((CGFloat) -> Void)? = nil) {
+        self.card = card
+        self.onSwipe = onSwipe
+        self.onSwipeProgress = onSwipeProgress
+    }
 
     var body: some View {
         CardView(card: card)
@@ -27,6 +34,11 @@ struct SwipeableCardView: View {
                     .onChanged { gesture in
                         offset = gesture.translation
                         isDragging = true
+
+                        // スワイプ進行度を計算（0.0〜1.0）
+                        let distance = max(abs(gesture.translation.width), abs(gesture.translation.height))
+                        let progress = min(distance / (swipeThreshold * 2), 1.0)
+                        onSwipeProgress?(progress)
                     }
                     .onEnded { gesture in
                         isDragging = false
@@ -75,6 +87,7 @@ struct SwipeableCardView: View {
                 performSwipe(direction: direction)
             } else {
                 offset = .zero
+                onSwipeProgress?(0) // スワイプキャンセル時は進行度をリセット
             }
         } else {
             if abs(translation.height) > swipeThreshold {
@@ -82,6 +95,7 @@ struct SwipeableCardView: View {
                 performSwipe(direction: direction)
             } else {
                 offset = .zero
+                onSwipeProgress?(0) // スワイプキャンセル時は進行度をリセット
             }
         }
     }
@@ -101,10 +115,12 @@ struct SwipeableCardView: View {
 
         withAnimation(.easeOut(duration: 0.3)) {
             offset = exitOffset
+            onSwipeProgress?(1.0) // スワイプ完了時は進行度を最大に
         }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             onSwipe(direction)
+            onSwipeProgress?(0) // スワイプ後は進行度をリセット
             // offset = .zero を削除 - カードはそのまま画面外に留まる
         }
     }

@@ -5,6 +5,7 @@
 
 import UIKit
 import CoreGraphics
+import ImagePlayground
 
 class ImageGeneratorService {
     static let shared = ImageGeneratorService()
@@ -13,6 +14,96 @@ class ImageGeneratorService {
 
     /// タスクテキストと絵文字から画像を生成してローカルに保存
     func generateTaskImage(taskText: String, emoji: String) async -> String? {
+        // iOS 18.4以降でImageCreator APIが利用可能な場合
+        if #available(iOS 18.4, *) {
+            if let imagePath = await generateWithImageCreator(taskText: taskText, emoji: emoji) {
+                return imagePath
+            }
+            // ImageCreator APIが失敗した場合はフォールバック
+            print("⚠️ ImageCreator APIが失敗しました。フォールバック処理を実行します。")
+        }
+
+        // iOS 18.4未満、または ImageCreator API失敗時のフォールバック
+        return await generateWithCoreGraphics(taskText: taskText, emoji: emoji)
+    }
+
+    /// ImageCreator APIを使用した画像生成 (iOS 18.4+)
+    @available(iOS 18.4, *)
+    private func generateWithImageCreator(taskText: String, emoji: String) async -> String? {
+        do {
+            // プロンプトを作成
+            let prompt = createPromptForTask(taskText: taskText, emoji: emoji)
+
+            // ImageCreatorを初期化（async throws）
+            let creator = try await ImageCreator()
+
+            // スタイルを選択（タスクの種類に応じて）
+            let style = selectImageStyle(for: taskText)
+
+            // 画像を生成（AsyncSequenceで返される）
+            let images = creator.images(
+                for: [.text(prompt)],
+                style: style,
+                limit: 1
+            )
+
+            // 最初の画像を取得
+            for try await image in images {
+                let cgImage = image.cgImage
+                let uiImage = UIImage(cgImage: cgImage)
+                return saveImageToCache(uiImage, taskId: UUID().uuidString)
+            }
+
+            return nil
+        } catch ImageCreator.Error.notSupported {
+            print("⚠️ このデバイスではImage Creationがサポートされていません")
+            return nil
+        } catch {
+            print("❌ ImageCreator API エラー: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    /// タスク内容に応じた画像スタイルを選択
+    @available(iOS 18.4, *)
+    private func selectImageStyle(for taskText: String) -> ImagePlaygroundStyle {
+        // タスクの種類に応じてスタイルを選択
+        if taskText.contains("絵") || taskText.contains("アート") || taskText.contains("イラスト") {
+            return .illustration
+        } else if taskText.contains("メモ") || taskText.contains("スケッチ") {
+            return .sketch
+        } else {
+            // デフォルトはアニメーションスタイル
+            return .animation
+        }
+    }
+
+    /// タスクテキストから画像生成用のプロンプトを作成
+    private func createPromptForTask(taskText: String, emoji: String) -> String {
+        // タスクの内容に応じたビジュアルスタイルを決定
+        var styleKeywords = [String]()
+
+        if taskText.contains("勉強") || taskText.contains("レポート") || taskText.contains("課題") {
+            styleKeywords.append("books, study desk, academic atmosphere")
+        } else if taskText.contains("仕事") || taskText.contains("会議") {
+            styleKeywords.append("business, professional workspace, modern office")
+        } else if taskText.contains("運動") || taskText.contains("ジム") {
+            styleKeywords.append("fitness, sports, active lifestyle")
+        } else if taskText.contains("料理") || taskText.contains("買い物") {
+            styleKeywords.append("food, cooking, kitchen")
+        } else if taskText.contains("音楽") {
+            styleKeywords.append("music, instruments, musical notes")
+        } else {
+            styleKeywords.append("colorful, creative, abstract")
+        }
+
+        // プロンプトを構築
+        let style = styleKeywords.joined(separator: ", ")
+        return "A simple, clean illustration representing: \(style). Minimalist style with gradient background. Include \(emoji) emoji theme."
+    }
+
+    /// Core Graphicsを使用した画像生成（フォールバック）
+    private func generateWithCoreGraphics(taskText: String, emoji: String) async -> String? {
         // 画像サイズ
         let size = CGSize(width: 400, height: 300)
 

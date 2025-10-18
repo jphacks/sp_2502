@@ -23,64 +23,51 @@ struct CardView: View {
                 )
                 .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
 
-            VStack(spacing: 0) {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                Color(red: 0.95, green: 0.9, blue: 0.8),
-                                Color(red: 0.9, green: 0.85, blue: 0.75)
-                            ]),
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .overlay(
-                        Group {
-                            if card.isTaskCard {
-                                // タスクカード用の表示
-                                taskCardContent
-                            } else if card.isLocalImage {
-                                // ローカル画像の表示
-                                Image(card.imageURL)
+            VStack(spacing: 12) {
+                // 画像エリア（中央配置）
+                Group {
+                    if card.isTaskCard {
+                        // タスクカード用の表示
+                        taskCardContent
+                    } else if card.isLocalImage {
+                        // ローカル画像の表示
+                        Image(card.imageURL)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    } else {
+                        // リモート画像の表示
+                        AsyncImage(url: URL(string: card.imageURL)) { phase in
+                            switch phase {
+                            case .empty:
+                                ProgressView()
+                            case .success(let image):
+                                image
                                     .resizable()
                                     .aspectRatio(contentMode: .fill)
-                                    .clipped()
-                            } else {
-                                // リモート画像の表示
-                                AsyncImage(url: URL(string: card.imageURL)) { phase in
-                                    switch phase {
-                                    case .empty:
-                                        ProgressView()
-                                    case .success(let image):
-                                        image
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fill)
-                                            .clipped()
-                                    case .failure:
-                                        Image(systemName: "photo")
-                                            .font(.largeTitle)
-                                            .foregroundColor(.gray)
-                                    @unknown default:
-                                        EmptyView()
-                                    }
-                                }
+                            case .failure:
+                                Image(systemName: "photo")
+                                    .font(.largeTitle)
+                                    .foregroundColor(.gray)
+                            @unknown default:
+                                EmptyView()
                             }
                         }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .padding(12)
-                    )
-                    .padding(16)
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipped()
+                .cornerRadius(15)
+                .padding(16)
 
                 if let title = card.title, !card.isTaskCard {
                     Text(title)
                         .font(.headline)
-                        .foregroundColor(.black)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
                         .padding(.bottom, 12)
                 }
             }
         }
-        .frame(width: 280, height: 380)
     }
 
     // タスクカード用のコンテンツ

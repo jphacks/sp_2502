@@ -8,6 +8,7 @@ import SwiftUI
 struct ContentView: View {
     @StateObject private var viewModel = CardViewModel()
     @StateObject private var speechViewModel = SpeechRecognizerViewModel()
+    @State private var swipeProgress: CGFloat = 0
 
     var body: some View {
         ZStack {
@@ -59,24 +60,9 @@ struct ContentView: View {
                         )
 
                         // カードスタック表示
-                        ZStack {
-                            // 後ろのカード（最大2枚）
-                            ForEach(Array(viewModel.getUpcomingCards().enumerated()), id: \.element.id) { index, upcomingCard in
-                                CardView(card: upcomingCard)
-                                    .scaleEffect(1.0 - CGFloat(index + 1) * 0.05)
-                                    .offset(y: CGFloat(index + 1) * 10)
-                                    .opacity(0.5 - Double(index) * 0.2)
-                                    .zIndex(Double(-index - 1))
-                                    .animation(.spring(response: 0.4, dampingFraction: 0.8), value: card.id)
-                            }
-
-                            // 前面のカード（スワイプ可能）
-                            SwipeableCardView(card: card) { direction in
-                                viewModel.handleSwipe(direction: direction)
-                            }
-                            .zIndex(1)
-                            .transition(.scale(scale: 0.95).combined(with: .opacity))
-                            .id(card.id)
+                        GeometryReader { geometry in
+                            cardStackView(currentCard: card, screenSize: geometry.size)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
                         }
 
                         actionButton(
@@ -139,18 +125,72 @@ struct ContentView: View {
         }
     }
 
+    @ViewBuilder
+    private func cardStackView(currentCard: Card, screenSize: CGSize) -> some View {
+        let stackCards = [currentCard] + viewModel.getUpcomingCards(count: 2)
+
+        // カードサイズを3:2の比率で設定（画面幅の75%基準）
+        let cardWidth = screenSize.width * 0.75
+        let cardHeight = cardWidth * (2.0 / 3.0)
+
+        ZStack {
+            ForEach(Array(stackCards.enumerated()), id: \.element.id) { index, stackCard in
+                Group {
+                    if index == 0 {
+                        SwipeableCardView(card: stackCard, onSwipe: { direction in
+                            viewModel.handleSwipe(direction: direction)
+                        }, onSwipeProgress: { progress in
+                            swipeProgress = progress
+                        })
+                    } else {
+                        CardView(card: stackCard)
+                            .allowsHitTesting(false)
+                    }
+                }
+                .frame(width: cardWidth, height: cardHeight)
+                .scaleEffect(calculateScale(for: index))
+                .offset(y: calculateOffset(for: index))
+                .opacity(index == 0 ? 1.0 : 0.5 - Double(index - 1) * 0.15)
+                .zIndex(Double(stackCards.count - index))
+            }
+        }
+        .animation(.spring(response: 0.5, dampingFraction: 0.7), value: currentCard.id)
+    }
+
+    private func calculateScale(for index: Int) -> CGFloat {
+        if index == 0 {
+            return 1.0
+        } else if index == 1 {
+            // 進行度に応じて0.95から1.0に拡大
+            return 0.95 + swipeProgress * 0.05
+        } else {
+            // index 2以降も進行度に応じて拡大
+            return 1.0 - CGFloat(index) * 0.05 + swipeProgress * 0.05
+        }
+    }
+
+    private func calculateOffset(for index: Int) -> CGFloat {
+        if index == 0 {
+            return 0
+        } else if index == 1 {
+            // 進行度に応じて10から0に移動
+            return CGFloat(index) * 10 - swipeProgress * 10
+        } else {
+            // index 2以降も進行度に応じて移動
+            return CGFloat(index) * 10 - swipeProgress * 10
+        }
+    }
+
     private var micButton: some View {
         Button(action: {}) {
             Image(systemName: "mic.fill")
-                .font(.system(size: 24))
-                .foregroundColor(.white)
-                .frame(width: 60, height: 60)
-                .background(speechViewModel.isRecording ? Color.red : Color.blue)
-                .clipShape(Circle())
-                .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
-                .scaleEffect(speechViewModel.isRecording ? 1.2 : 1.0)
-                .animation(.spring(response: 0.3), value: speechViewModel.isRecording)
+                .imageScale(.large)
         }
+        .buttonStyle(.borderedProminent)
+        .tint(speechViewModel.isRecording ? .red : .blue)
+        .controlSize(.extraLarge)
+        .scaleEffect(speechViewModel.isRecording ? 1.2 : 1.0)
+        .animation(.spring(response: 0.3), value: speechViewModel.isRecording)
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { _ in

@@ -10,14 +10,14 @@ struct AuthView: View {
     @State var user: User?
 
     var body: some View {
-        if let user = self.user {
+//        if let user = self.user {
             VStack {
                 ContentView()
                 Button("Logout", action: self.logout)
             }
-        } else {
-            Button("Login", action: self.login)
-        }
+//        } else {
+//            Button("Login", action: self.login)
+//        }
     }
 }
 
