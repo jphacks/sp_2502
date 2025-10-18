@@ -36,21 +36,32 @@ struct CardView: View {
                         )
                     )
                     .overlay(
-                        AsyncImage(url: URL(string: card.imageURL)) { phase in
-                            switch phase {
-                            case .empty:
-                                ProgressView()
-                            case .success(let image):
-                                image
+                        Group {
+                            if card.isLocalImage {
+                                // ローカル画像の表示
+                                Image(card.imageURL)
                                     .resizable()
                                     .aspectRatio(contentMode: .fill)
                                     .clipped()
-                            case .failure:
-                                Image(systemName: "photo")
-                                    .font(.largeTitle)
-                                    .foregroundColor(.gray)
-                            @unknown default:
-                                EmptyView()
+                            } else {
+                                // リモート画像の表示
+                                AsyncImage(url: URL(string: card.imageURL)) { phase in
+                                    switch phase {
+                                    case .empty:
+                                        ProgressView()
+                                    case .success(let image):
+                                        image
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                            .clipped()
+                                    case .failure:
+                                        Image(systemName: "photo")
+                                            .font(.largeTitle)
+                                            .foregroundColor(.gray)
+                                    @unknown default:
+                                        EmptyView()
+                                    }
+                                }
                             }
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -75,6 +86,7 @@ struct CardView: View {
         id: "1",
         imageURL: "https://via.placeholder.com/300",
         title: "Sample Card",
-        description: nil
+        description: nil,
+        isLocalImage: false
     ))
 }

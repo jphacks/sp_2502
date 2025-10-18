@@ -15,14 +15,21 @@ class CardViewModel: ObservableObject {
     private var cards: [Card] = []
     private var swipeHistory: [(card: Card, action: String)] = []
     private let apiService = APIService.shared
+    private let mockDataProvider = MockDataProvider.shared
+    private let appConfig = AppConfiguration.shared
 
-    @MainActor  
+    @MainActor
     func loadCards() async {
         isLoading = true
         errorMessage = nil
 
         do {
-            cards = try await apiService.fetchCards()
+            if appConfig.isTestMode {
+                cards = try await mockDataProvider.fetchCards()
+                print("🧪 [Test Mode] Loaded \(cards.count) mock cards")
+            } else {
+                cards = try await apiService.fetchCards()
+            }
             currentCard = cards.first
         } catch {
             errorMessage = "Failed to load cards: \(error.localizedDescription)"
@@ -52,7 +59,11 @@ class CardViewModel: ObservableObject {
 
         Task { @MainActor in
             do {
-                try await apiService.sendSwipeAction(cardId: card.id, action: action)
+                if appConfig.isTestMode {
+                    try await mockDataProvider.sendSwipeAction(cardId: card.id, action: action)
+                } else {
+                    try await apiService.sendSwipeAction(cardId: card.id, action: action)
+                }
             } catch {
                 errorMessage = "Failed to send action: \(error.localizedDescription)"
             }
