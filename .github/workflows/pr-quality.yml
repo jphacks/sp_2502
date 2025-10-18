@@ -32,6 +32,9 @@ jobs:
           node-version: 20
           cache: pnpm
 
+      - name: Change Directory
+        run: cd web
+
       - name: Install
         run: pnpm install --frozen-lockfile
 
@@ -54,6 +57,9 @@ jobs:
           node-version: 20
           cache: pnpm
 
+      - name: Change Directory
+        run: cd web
+
       - name: Install
         run: pnpm install --frozen-lockfile
 
@@ -75,6 +81,9 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
+
+      - name: Change Directory
+        run: cd web
 
       - name: Install
         run: pnpm install --frozen-lockfile
