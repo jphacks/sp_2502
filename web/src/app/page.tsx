@@ -10,11 +10,11 @@ import {
 import Link from "next/link";
 
 import { Notes } from "@/app/_components/notes";
-import { auth } from "@/server/auth";
+import { getSession } from "@/server/auth/helpers";
 import { api, HydrateClient } from "@/trpc/server";
 
 export default async function Home() {
-  const session = await auth();
+  const session = await getSession();
 
   if (session?.user) {
     void api.note.list.prefetch({ limit: 50, offset: 0 });
@@ -41,7 +41,10 @@ export default async function Home() {
               {session?.user && (
                 <HStack gap={4}>
                   <Text color="whiteAlpha.800">
-                    {session.user.name ?? session.user.email}
+                    {session.user.name ??
+                      session.user.nickname ??
+                      session.user.email ??
+                      "ユーザー"}
                   </Text>
                   <Button
                     asChild
@@ -49,7 +52,7 @@ export default async function Home() {
                     bg="whiteAlpha.200"
                     fontWeight="semibold"
                     _hover={{ bg: "whiteAlpha.300" }}>
-                    <Link href="/api/auth/signout">ログアウト</Link>
+                    <Link href="/auth/logout">ログアウト</Link>
                   </Button>
                 </HStack>
               )}
@@ -78,7 +81,7 @@ export default async function Home() {
                 fontWeight="semibold"
                 fontSize="lg"
                 _hover={{ bg: "whiteAlpha.300" }}>
-                <Link href="/api/auth/signin">ログイン</Link>
+                <Link href="/auth/login">ログイン</Link>
               </Button>
             </Stack>
           )}
