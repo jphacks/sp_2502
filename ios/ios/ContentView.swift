@@ -9,6 +9,7 @@ struct ContentView: View {
     @StateObject private var viewModel = CardViewModel()
     @StateObject private var speechViewModel = SpeechRecognizerViewModel()
     @State private var swipeProgress: CGFloat = 0
+    @State private var currentSwipeDirection: SwipeDirection?
 
     var body: some View {
         GeometryReader { geometry in
@@ -80,14 +81,14 @@ struct ContentView: View {
                         Spacer()
                     }
 
-                    // 左下：Undoボタン
+                    // 左下：Cutボタン
                     VStack {
                         Spacer()
                         HStack {
                             actionButton(
-                                icon: "arrow.uturn.backward",
+                                icon: "scissors",
                                 color: Color(red: 1.0, green: 0.6, blue: 0.4),
-                                action: { viewModel.handleUndo() }
+                                action: { viewModel.handleCut() }
                             )
                             .padding(.leading, 30)
                             .padding(.bottom, 120)
@@ -120,11 +121,39 @@ struct ContentView: View {
                     }
                 }
 
+                // 全画面オーバーレイ（スワイプ時の方向表示）
+                if let direction = currentSwipeDirection {
+                    swipeOverlay(for: direction)
+                        .ignoresSafeArea()
+                        .allowsHitTesting(false)
+                        .transition(.opacity)
+                }
+
                 // マイク入力ボタン（下部中央に配置）
                 VStack {
                     Spacer()
                     micButton
                         .padding(.bottom, 50)
+                }
+
+                // リアルタイム音声認識テキスト表示（録音中のみ）
+                if speechViewModel.isRecording && !speechViewModel.recognizedText.isEmpty {
+                    VStack {
+                        Spacer()
+                        Text(speechViewModel.recognizedText)
+                            .font(.system(size: 24, weight: .medium))
+                            .foregroundColor(.white)
+                            .padding(30)
+                            .background(
+                                Color.black.opacity(0.7)
+                                    .cornerRadius(16)
+                            )
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 40)
+                        Spacer()
+                    }
+                    .transition(.opacity)
+                    .animation(.easeInOut(duration: 0.2), value: speechViewModel.recognizedText)
                 }
             }
         }
@@ -164,11 +193,18 @@ struct ContentView: View {
             ForEach(Array(stackCards.enumerated()), id: \.element.id) { index, stackCard in
                 Group {
                     if index == 0 {
-                        SwipeableCardView(card: stackCard, onSwipe: { direction in
-                            viewModel.handleSwipe(direction: direction)
-                        }, onSwipeProgress: { progress in
-                            swipeProgress = progress
-                        })
+                        SwipeableCardView(
+                            card: stackCard,
+                            onSwipe: { direction in
+                                viewModel.handleSwipe(direction: direction)
+                            },
+                            onSwipeProgress: { progress in
+                                swipeProgress = progress
+                            },
+                            onSwipeDirectionChange: { direction in
+                                currentSwipeDirection = direction
+                            }
+                        )
                     } else {
                         CardView(card: stackCard)
                             .allowsHitTesting(false)
@@ -179,6 +215,7 @@ struct ContentView: View {
                 .offset(y: calculateOffset(for: index))
                 .opacity(index == 0 ? 1.0 : 0.5 - Double(index - 1) * 0.15)
                 .zIndex(Double(stackCards.count - index))
+                .animation(.spring(), value: swipeProgress)
             }
         }
         .animation(.spring(response: 0.5, dampingFraction: 0.7), value: currentCard.id)
@@ -264,6 +301,67 @@ struct ContentView: View {
                     )
                 )
                 .shadow(color: .black.opacity(0.4), radius: 8, x: 0, y: 4)
+        }
+    }
+
+    // 全画面スワイプオーバーレイ
+    private func swipeOverlay(for direction: SwipeDirection) -> some View {
+        ZStack {
+            // 半透明背景
+            colorForDirection(direction)
+                .opacity(0.3)
+
+            // アイコンとテキスト
+            VStack(spacing: 20) {
+                Image(systemName: iconForDirection(direction))
+                    .font(.system(size: 100))
+                    .foregroundColor(.white)
+                Text(textForDirection(direction))
+                    .font(.system(size: 40, weight: .bold))
+                    .foregroundColor(.white)
+            }
+        }
+    }
+
+    // スワイプ方向に応じたアイコン
+    private func iconForDirection(_ direction: SwipeDirection) -> String {
+        switch direction {
+        case .up:
+            return "trash"
+        case .right:
+            return "hand.thumbsup.fill"
+        case .cut:
+            return "scissors"
+        case .left:
+            return "scissors"
+        }
+    }
+
+    // スワイプ方向に応じたテキスト
+    private func textForDirection(_ direction: SwipeDirection) -> String {
+        switch direction {
+        case .up:
+            return "Delete"
+        case .right:
+            return "Like"
+        case .cut:
+            return "Cut"
+        case .left:
+            return "Cut"
+        }
+    }
+
+    // スワイプ方向に応じた色
+    private func colorForDirection(_ direction: SwipeDirection) -> Color {
+        switch direction {
+        case .up:
+            return .red
+        case .right:
+            return .green
+        case .cut:
+            return Color(red: 1.0, green: 0.6, blue: 0.4)
+        case .left:
+            return Color(red: 1.0, green: 0.6, blue: 0.4)
         }
     }
 }

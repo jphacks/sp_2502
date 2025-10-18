@@ -14,7 +14,6 @@ class CardViewModel: ObservableObject {
     @Published var isGeneratingCard = false
 
     private var cards: [Card] = []
-    private var swipeHistory: [(card: Card, action: String)] = []
     private let apiService = APIService.shared
     private let mockDataProvider = MockDataProvider.shared
     private let appConfig = AppConfiguration.shared
@@ -57,16 +56,13 @@ class CardViewModel: ObservableObject {
         switch direction {
         case .up:
             action = "delete"
-        case .down:
-            action = "skip"
         case .left:
-            performUndo()
-            return
+            action = "cut"
         case .right:
             action = "like"
+        case .cut:
+            action = "cut"
         }
-
-        swipeHistory.append((card: card, action: action))
 
         Task { @MainActor in
             do {
@@ -81,14 +77,6 @@ class CardViewModel: ObservableObject {
         }
 
         moveToNextCard()
-    }
-
-    @MainActor
-    private func performUndo() {
-        guard let lastSwipe = swipeHistory.popLast() else { return }
-
-        cards.insert(lastSwipe.card, at: 0)
-        currentCard = lastSwipe.card
     }
 
     @MainActor
@@ -117,13 +105,8 @@ class CardViewModel: ObservableObject {
     }
 
     @MainActor
-    func handleSkip() {
-        handleSwipe(direction: .down)
-    }
-
-    @MainActor
-    func handleUndo() {
-        performUndo()
+    func handleCut() {
+        handleSwipe(direction: .cut)
     }
 
     // 音声入力からタスクカードを追加

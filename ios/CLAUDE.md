@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### ディレクトリ構造
 
 ```
-ios/
+./
 ├── iosApp.swift                          # アプリエントリーポイント
 ├── ContentView.swift                      # メインView（カードスタック表示）
 ├── AppConfiguration.swift                 # テストモード/APIモード切り替え
@@ -50,6 +50,14 @@ xcodebuild -project ios.xcodeproj -scheme ios -configuration Debug -sdk iphonesi
 ```
 
 作業終了前に必ず上記のコマンドでビルドし、動作を確認してください。
+
+### クリーンビルド
+
+```bash
+xcodebuild -project ios.xcodeproj -scheme ios -configuration Debug -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 17 Pro' clean build
+```
+
+ビルドの不整合が発生した場合は、クリーンビルドを実行してください。
 
 ### ビルドエラーと警告の確認
 
@@ -121,7 +129,11 @@ xcodebuild -project ios.xcodeproj -scheme ios -configuration Debug -sdk iphonesi
 
 ### スワイプ機能（`SwipeableCardView`）
 
-- **方向**: 上（Delete）、下（Skip）、左（Undo）、右（Like）
+- **方向**: 上（Delete）、左（Undo）、右（Like）、cut（Cut）
+  - 上スワイプ: タスク削除
+  - 右スワイプ: いいね
+  - 左スワイプ: 直前のアクションを取り消し
+  - Cutボタン: カット操作（左下のボタンから実行）
 - **閾値**: 100pt
 - **アニメーション**: `.spring()` で追従、`.easeOut(duration: 0.3)` で完了
 - **進行度コールバック**: `onSwipeProgress` で背後のカードのスケール/オフセットを調整
@@ -206,8 +218,30 @@ xcodebuild -project ios.xcodeproj -scheme ios -configuration Debug -sdk iphonesi
 - async/await を使用し、completion handler は避ける
 - シングルトンサービスは `static let shared` パターンを使用
 
+## UI実装の詳細
+
+### Figmaベースデザイン
+
+- **背景色**: RGB(146, 0, 0) - 赤系統のブランドカラー
+- **カードサイズ**: 画面幅の90%、画面高さの70%
+- **カードスタック**: 現在のカード + 次の2枚を重ねて表示
+  - 背後のカードは opacity 0.5〜0.35、scale 0.95〜0.90
+  - スワイプ進行度に応じて背後カードが前面に移動（スケール・オフセット調整）
+- **装飾要素**: 左上・右下に回転したカードを背景装飾として配置
+- **アクションボタン**:
+  - Delete（右上）: 赤色、ゴミ箱アイコン
+  - Cut（左下）: オレンジ色、はさみアイコン
+  - Like（右下）: 緑色、サムズアップアイコン
+  - マイク（下部中央）: 録音中は赤色に変化、1.2倍にスケール
+
+### 状態表示
+
+- **ローディング**: `ProgressView` + "Loading cards..." テキスト
+- **カード生成中**: `ProgressView` + "カードを生成中..." テキスト
+- **エラー**: 警告アイコン + エラーメッセージ + Retryボタン
+- **カード不在**: "No more cards" メッセージ（自動リロード発動）
+
 ## ブランチ戦略
 
 - **メインブランチ**: `main`
 - PR は `main` ブランチに対して作成
-- 現在のブランチ: `famisics/ios/card`（カードView実装用）

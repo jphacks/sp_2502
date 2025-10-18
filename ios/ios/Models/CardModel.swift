@@ -7,9 +7,9 @@ import Foundation
 
 enum SwipeDirection {
     case up
-    case down
     case left
     case right
+    case cut
 }
 
 struct Card: Identifiable, Codable {
