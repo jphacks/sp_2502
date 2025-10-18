@@ -4,86 +4,68 @@ import {
   Container,
   Heading,
   HStack,
+  VStack,
   Stack,
   Text,
 } from "@chakra-ui/react";
-import Link from "next/link";
-
-import { Notes } from "@/app/_components/notes";
+import { FaAngleDown } from "react-icons/fa6";
 import { auth } from "@/server/auth";
 import { api, HydrateClient } from "@/trpc/server";
+import CardList from "@/app/_components/cards-list";
+
 
 export default async function Home() {
-  const session = await auth();
+  const listA = [
+    { id: 1, title: "カード1", description: "最初のカード" },
+    { id: 2, title: "カード2", description: "2番目のカード" },
+    { id: 3, title: "カード3", description: "3番目のカード" },
+    { id: 1, title: "カード1", description: "最初のカード" },
+    { id: 2, title: "カード2", description: "2番目のカード" },
+    { id: 3, title: "カード3", description: "3番目のカード" },
+    { id: 1, title: "カード1", description: "最初のカード" },
+    { id: 2, title: "カード2", description: "2番目のカード" },
+    { id: 3, title: "カード3", description: "3番目のカード" },
+  ];
+  const listB = [
+    { id: 1, taskname: "キーワード決定"},
+    { id: 2, taskname: "参考文献探し"},
+    { id: 3, taskname: "心理学レポート"},
+  ];
 
-  if (session?.user) {
-    void api.note.list.prefetch({ limit: 50, offset: 0 });
-  }
-
-  return (
+  return(
     <HydrateClient>
-      <Box
-        minH="100vh"
-        bgGradient="to-b"
-        gradientFrom="purple.900"
-        gradientTo="gray.900"
-        color="white">
-        {/* ヘッダー */}
-        <Box
-          borderBottomWidth="1px"
-          borderColor="whiteAlpha.200"
-          bg="whiteAlpha.100">
-          <Container maxW="container.xl">
-            <HStack justify="space-between" py={4}>
-              <Heading size="xl" fontWeight="bold">
-                Note App
-              </Heading>
-              {session?.user && (
-                <HStack gap={4}>
-                  <Text color="whiteAlpha.800">
-                    {session.user.name ?? session.user.email}
-                  </Text>
-                  <Button
-                    asChild
-                    rounded="lg"
-                    bg="whiteAlpha.200"
-                    fontWeight="semibold"
-                    _hover={{ bg: "whiteAlpha.300" }}>
-                    <Link href="/api/auth/signout">ログアウト</Link>
-                  </Button>
-                </HStack>
-              )}
-            </HStack>
-          </Container>
-        </Box>
+        <HStack w="100vw" h="100vh" gap={0} bg="white">
+          <Box bg="white" w="300px" minW="300px" h="full" >
+            <VStack mt="33px">
+              <Box w="185px" h="185px" border="none" bgImage="url('/images/check.svg')"/>
+              <Box mt="22px" w="268px" h="165px" border="none" bgImage="url('/images/choco.svg')" display="flex" alignItems="center" justifyContent="center">
+                <Text fontSize="32px" color="#FFBE45">キーワード探し</Text>
+              </Box>
 
-        {/* メインコンテンツ */}
-        <Container maxW="container.xl" py={12}>
-          {session?.user ? (
-            <Notes />
-          ) : (
-            <Stack align="center" gap={8} py={16}>
-              <Heading size="4xl" fontWeight="bold">
-                ようこそ！
-              </Heading>
-              <Text color="whiteAlpha.800" textAlign="center" textStyle="xl">
-                Noteアプリを使用するにはログインしてください
-              </Text>
-              <Button
-                asChild
-                rounded="lg"
-                bg="whiteAlpha.900"
-                px={8}
-                py={4}
-                fontWeight="semibold"
-                fontSize="lg"
-                _hover={{ bg: "whiteAlpha.300" }}>
-                <Link href="/api/auth/signin">ログイン</Link>
-              </Button>
-            </Stack>
-          )}
-        </Container>
-      </Box>
+              <Box flex="1" gap="5px" w="full" minH="200px" overflowY="auto">
+                {listB.map((item) => (
+                  <VStack key={item.id} fontSize="40px" color="#000000" align="center">
+                    <FaAngleDown/>
+                    {item.taskname}
+                  </VStack>
+                ))}
+              </Box>
+
+              <Box  mb="48px" position="fixed" bottom="0px" w="277px" h="79px" bg="#FFBE45"  borderRadius="15px" display="flex" alignItems="center" justifyContent="center">
+                <Text fontSize="40px" color="#000000">タスク追加</Text>
+              </Box>
+            </VStack>
+          </Box>
+          <Box flex="1" bg="#960000" minW="300px" h="full" overflowY="auto" p={5}>
+            <VStack w="full" h="full" gap={10}>
+              <Box bg="#A60000" w="100%" maxW="600px" h="auto" minH="130px" borderRadius="40px" display="flex" alignItems="center" justifyContent="center" >
+                <Text fontSize="clamp(1px, 5vw, 60px)" color="#FFBE45">タスクのカケラ</Text>
+              </Box>
+              <CardList items={listA}/>
+            </VStack>
+          </Box>
+        </HStack>
     </HydrateClient>
   );
 }
+
