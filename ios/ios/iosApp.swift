@@ -9,7 +9,8 @@ import SwiftUI
 struct iosApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            // ContentView()
+            AuthView()
         }
     }
 }
