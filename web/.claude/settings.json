@@ -15,8 +15,8 @@
   },
   "permissions": {
     "allow": [
-      "Bash(fd:*)",
-      "Bash(cat:*)",
+      "Bash(fd :*)",
+      "Bash(cat :*)",
       "Bash(gh issue view :*)",
       "Bash(gh issue list :*)",
       "Bash(gh pr view :*)",
@@ -39,7 +39,7 @@
       "Bash(docker compose down -v)",
       "Bash(docker compose logs)",
       "Bash(docker compose logs -f)",
-      "Bash(trash:*)",
+      "Bash(trash :*)",
       "mcp__context7__resolve-library-id",
       "mcp__context7__get-library-docs",
       "mcp__playwright__browser_navigate",
@@ -59,8 +59,8 @@
     ],
     "deny": ["Bash(pnpm ci-check)", "Bash(rm -rf :*)"],
     "ask": [
-      "Bash(pnpm add:*)",
-      "Bash(pnpm remove:*)",
+      "Bash(pnpm add :*)",
+      "Bash(pnpm remove :*)",
       "Bash(git push)",
       "Bash(git commit)",
       "Bash(git merge)"
