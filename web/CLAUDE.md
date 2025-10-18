@@ -39,7 +39,7 @@
 ```bash
 # 1. リポジトリのクローン
 git clone <repository-url>
-cd t3-app-template
+cd sp_2502
 
 # 2. 環境変数の設定
 cp .env.example .env
@@ -415,7 +415,7 @@ return deps.db.transaction(async tx => {
 #### 設定
 
 - **スキーマの場所**：`src/server/db/schema/`
-- **テーブルプレフィックス**：`template_`（マルチプロジェクトスキーマ対応）
+- **テーブルプレフィックス**：`database_`（マルチプロジェクトスキーマ対応）
 - **型推論**：Drizzleから`InsertNote`、`SelectNote`など
 - **リレーション**：`schema/relations.ts`で定義
 
@@ -519,24 +519,6 @@ export const createPost = protectedProcedure
    - **Domain** → `AUTH0_ISSUER_BASE_URL`（`https://`を追加）
    - **Client ID** → `AUTH0_CLIENT_ID`
    - **Client Secret** → `AUTH0_CLIENT_SECRET`
-
-#### 設定例（`.env`）
-
-```env
-# Auth0認証設定
-AUTH0_SECRET="<openssl rand -base64 32で生成したランダム文字列>"
-AUTH0_BASE_URL="http://localhost:3304"
-AUTH0_ISSUER_BASE_URL="https://your-tenant.auth0.com"
-AUTH0_CLIENT_ID="your-auth0-client-id"
-AUTH0_CLIENT_SECRET="your-auth0-client-secret"
-
-# PostgreSQL接続
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_DB=template
-POSTGRES_HOST=localhost
-POSTGRES_PORT=5334
-```
 
 ### MCPサーバー
 
