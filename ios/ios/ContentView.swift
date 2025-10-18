@@ -7,6 +7,7 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var viewModel = CardViewModel()
+    @StateObject private var speechViewModel = SpeechRecognizerViewModel()
 
     var body: some View {
         ZStack {
@@ -77,6 +78,17 @@ struct ContentView: View {
                         .foregroundColor(.gray)
                 }
             }
+
+            // マイク入力ボタン（右下に配置）
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    micButton
+                        .padding(.trailing, 20)
+                        .padding(.bottom, 50)
+                }
+            }
         }
         .task {
             await viewModel.loadCards()
@@ -92,6 +104,49 @@ struct ContentView: View {
                 .background(Color.white)
                 .clipShape(Circle())
                 .shadow(color: .black.opacity(0.2), radius: 5, x: 0, y: 2)
+        }
+    }
+
+    private var micButton: some View {
+        Button(action: {}) {
+            Image(systemName: "mic.fill")
+                .font(.system(size: 24))
+                .foregroundColor(.white)
+                .frame(width: 60, height: 60)
+                .background(speechViewModel.isRecording ? Color.red : Color.blue)
+                .clipShape(Circle())
+                .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
+                .scaleEffect(speechViewModel.isRecording ? 1.2 : 1.0)
+                .animation(.spring(response: 0.3), value: speechViewModel.isRecording)
+        }
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    if !speechViewModel.isRecording {
+                        Task {
+                            await speechViewModel.startRecording()
+                        }
+                    }
+                }
+                .onEnded { _ in
+                    if speechViewModel.isRecording {
+                        speechViewModel.stopRecording()
+                    }
+                }
+        )
+        .alert("エラー", isPresented: .constant(speechViewModel.errorMessage != nil)) {
+            Button("OK") {
+                speechViewModel.errorMessage = nil
+            }
+            Button("設定を開く") {
+                if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(settingsURL)
+                }
+            }
+        } message: {
+            if let errorMessage = speechViewModel.errorMessage {
+                Text(errorMessage)
+            }
         }
     }
 }
