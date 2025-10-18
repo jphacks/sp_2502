@@ -8,11 +8,4 @@ export const auth0 = new Auth0Client({
   clientSecret: env.AUTH0_CLIENT_SECRET,
   appBaseUrl: env.AUTH0_BASE_URL,
   secret: env.AUTH0_SECRET,
-  session: {
-    cookie: {
-      sameSite: "lax",
-      // Production環境ではsecure属性を有効にする
-      ...(env.NODE_ENV === "production" && { secure: true }),
-    },
-  },
 });
