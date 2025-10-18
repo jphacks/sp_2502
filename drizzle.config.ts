@@ -6,7 +6,7 @@ export default {
   schema: "./src/server/db/schema",
   dialect: "postgresql",
   dbCredentials: {
-    url: env.MIGRATE_PROD_DATABASE_URL,
+    url: env.MIGRATE_PROD_DATABASE_URL ?? env.DATABASE_URL,
   },
-  tablesFilter: ["template_*"],
+  tablesFilter: ["database_*"],
 } satisfies Config;

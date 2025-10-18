@@ -17,11 +17,11 @@
     "allow": [
       "Bash(fd:*)",
       "Bash(cat:*)",
-      "Bash(gh issue view *)",
-      "Bash(gh issue list *)",
-      "Bash(gh pr view *)",
-      "Bash(gh pr list *)",
-      "Bash(gh pr create *)",
+      "Bash(gh issue view :*)",
+      "Bash(gh issue list :*)",
+      "Bash(gh pr view :*)",
+      "Bash(gh pr list :*)",
+      "Bash(gh pr create :*)",
       "Bash(pnpm install)",
       "Bash(pnpm dev)",
       "Bash(pnpm dev:all)",
@@ -57,7 +57,7 @@
       "mcp__chakra-ui__get_theme",
       "mcp__chakra-ui__customize_theme"
     ],
-    "deny": ["Bash(pnpm ci-check)", "Bash(rm -rf *)"],
+    "deny": ["Bash(pnpm ci-check)", "Bash(rm -rf :*)"],
     "ask": [
       "Bash(pnpm add:*)",
       "Bash(pnpm remove:*)",
@@ -65,11 +65,5 @@
       "Bash(git commit)",
       "Bash(git merge)"
     ]
-  },
-  "enabledMcpjsonServers": [
-    "context7",
-    "playwright",
-    "figma-dev-mode-mcp-server",
-    "chakra-ui"
-  ]
+  }
 }

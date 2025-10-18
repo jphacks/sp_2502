@@ -13,6 +13,8 @@ const {
   MIGRATE_PROD_DATABASE_URL,
 } = process.env;
 
+const isLocalRuntime = DB_RUNTIME !== "neon";
+
 export const env = createEnv({
   /**
    * Specify your server-side environment variables schema here. This way you can ensure the app
@@ -27,7 +29,9 @@ export const env = createEnv({
       .enum(["development", "test", "production"])
       .default("development"),
     DB_RUNTIME: z.enum(["local", "neon"]).default("local"),
-    MIGRATE_PROD_DATABASE_URL: z.string().url(),
+    MIGRATE_PROD_DATABASE_URL: isLocalRuntime
+      ? z.string().url().optional()
+      : z.string().url(),
   },
 
   /**

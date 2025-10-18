@@ -412,7 +412,7 @@ return deps.db.transaction(async tx => {
 #### 設定
 
 - **スキーマの場所**：`src/server/db/schema/`
-- **テーブルプレフィックス**：`template_`（マルチプロジェクトスキーマ対応）
+- **テーブルプレフィックス**：`database_`（マルチプロジェクトスキーマ対応）
 - **型推論**：Drizzleから`InsertNote`、`SelectNote`など
 - **リレーション**：`schema/relations.ts`で定義
 
@@ -437,7 +437,7 @@ PostgreSQLデータベースはDockerで実行：
 - **Adapter**：Drizzleアダプター
 - **Providers**：Discord OAuth（拡張可能）
 - **Session Strategy**：データベースセッション
-- **Tables**：`template_`プレフィックス付きの`users`、`accounts`、`sessions`
+- **Tables**：`database_`プレフィックス付きの`users`、`accounts`、`sessions`
 
 #### 認証と認可パターン
 
