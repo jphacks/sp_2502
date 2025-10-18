@@ -31,36 +31,36 @@ class ImageGeneratorService {
     @available(iOS 18.4, *)
     private func generateWithImageCreator(taskText: String, emoji: String, retryCount: Int = 0) async -> String? {
         let maxRetries = 1
+        let timeoutSeconds: UInt64 = 10 // 10秒のタイムアウト
 
         do {
-            let translatedText = translateTaskText(taskText)
-            let prompt = createPromptForTask(taskText: translatedText, emoji: emoji)
+            // タイムアウト付きで画像生成を実行
+            print("⏱️ ImageCreator API呼び出し開始（タイムアウト: \(timeoutSeconds)秒）")
 
-            let creator: ImageCreator
-            if let cached = cachedImageCreator as? ImageCreator {
-                creator = cached
-                print("♻️ キャッシュされたImageCreatorを使用します")
-            } else {
-                print("🆕 新しいImageCreatorを作成します")
-                creator = try await ImageCreator()
-                cachedImageCreator = creator as Any
+            return try await withThrowingTaskGroup(of: String?.self) { group in
+                // 画像生成タスク
+                group.addTask {
+                    return try await self.performImageGeneration(taskText: taskText, emoji: emoji)
+                }
+
+                // タイムアウトタスク
+                group.addTask {
+                    try await Task.sleep(nanoseconds: timeoutSeconds * 1_000_000_000)
+                    throw ImageGenerationError.timeout
+                }
+
+                // 最初に完了したタスクの結果を返す
+                if let result = try await group.next() {
+                    group.cancelAll() // 残りのタスクをキャンセル
+                    return result
+                }
+
+                return nil
             }
-
-            let style = selectImageStyle(for: translatedText)
-
-            let images = creator.images(
-                for: [.text(prompt)],
-                style: style,
-                limit: 1
-            )
-
-            for try await image in images {
-                let cgImage = image.cgImage
-                let uiImage = UIImage(cgImage: cgImage)
-                print("✅ ImageCreator APIで画像生成成功")
-                return saveImageToCache(uiImage, taskId: UUID().uuidString)
-            }
-
+        } catch ImageGenerationError.timeout {
+            print("⏱️ タイムアウト: ImageCreator APIが\(timeoutSeconds)秒以内に応答しませんでした")
+            print("   → Core Graphicsフォールバックに移行します")
+            cachedImageCreator = nil
             return nil
         } catch ImageCreator.Error.unsupportedLanguage {
             print("❌ サポートされていない言語が検出されました（日本語が含まれている可能性）")
@@ -90,6 +90,64 @@ class ImageGeneratorService {
             cachedImageCreator = nil
             return nil
         }
+    }
+
+    /// 画像生成の実処理（タイムアウト管理から分離）
+    @available(iOS 18.4, *)
+    private func performImageGeneration(taskText: String, emoji: String) async throws -> String? {
+        let translatedText = translateTaskText(taskText)
+        let prompt = createPromptForTask(taskText: translatedText, emoji: emoji)
+
+        let creator: ImageCreator
+        if let cached = cachedImageCreator as? ImageCreator {
+            creator = cached
+            print("♻️ キャッシュされたImageCreatorを使用します")
+        } else {
+            print("🆕 新しいImageCreatorを作成します")
+            creator = try await ImageCreator()
+            cachedImageCreator = creator as Any
+            print("✅ ImageCreator作成完了")
+        }
+
+        let style = selectImageStyle(for: translatedText)
+        print("🎨 スタイル選択: \(styleToString(style))")
+
+        print("🖼️ 画像生成開始...")
+        let images = creator.images(
+            for: [.text(prompt)],
+            style: style,
+            limit: 1
+        )
+
+        for try await image in images {
+            let cgImage = image.cgImage
+            let uiImage = UIImage(cgImage: cgImage)
+            print("✅ ImageCreator APIで画像生成成功")
+            return saveImageToCache(uiImage, taskId: UUID().uuidString)
+        }
+
+        print("⚠️ 画像が生成されませんでした（空のストリーム）")
+        return nil
+    }
+
+    /// スタイルを文字列に変換（デバッグ用）
+    @available(iOS 18.4, *)
+    private func styleToString(_ style: ImagePlaygroundStyle) -> String {
+        switch style {
+        case .illustration:
+            return "illustration"
+        case .sketch:
+            return "sketch"
+        case .animation:
+            return "animation"
+        default:
+            return "unknown"
+        }
+    }
+
+    /// 画像生成エラー
+    enum ImageGenerationError: Error {
+        case timeout
     }
 
     private func translateTaskText(_ taskText: String) -> String {

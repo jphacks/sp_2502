@@ -1,22 +1,27 @@
+//
+//  TranslationService.swift
+//  ios
+//
+
 import Foundation
 import NaturalLanguage
 
-class TranslationService {
-    static let shared = TranslationService()
+#if canImport(Translation)
+import Translation
+#endif
 
+final class TranslationService {
+    static let shared = TranslationService()
     private init() {}
 
-    /// 日本語テキストを英語に翻訳（簡易的なキーワードマッピング方式）
-    /// - Parameter japaneseText: 翻訳する日本語テキスト
-    /// - Returns: 翻訳された英語テキスト。必ず英語のみを返す
-    func translateToEnglish(japaneseText: String) -> String {
-        guard !japaneseText.isEmpty else {
-            return "daily task"
-        }
+    // MARK: - Public API
+
+    /// 旧：辞書ベースの簡易翻訳を「そのまま」使いたいときに呼ぶ
+    func basicTranslateToEnglish(japaneseText: String) -> String {
+        guard !japaneseText.isEmpty else { return "daily task" }
 
         print("🔄 簡易翻訳開始: \(japaneseText)")
 
-        // キーワードマッピング辞書（拡充版）
         let keywordMappings: [String: String] = [
             // 学習・勉強関連
             "勉強": "study", "学習": "study", "学ぶ": "learn", "習う": "learn",
@@ -47,17 +52,17 @@ class TranslationService {
             "外食": "eat out", "レストラン": "restaurant",
             "掃除": "cleaning", "洗濯": "laundry", "片付け": "organize",
 
-            // 音楽・エンターテイメント関連
+            // 音楽・エンタメ
             "音楽": "music", "ピアノ": "piano", "ギター": "guitar",
             "歌": "song", "歌う": "sing", "演奏": "play", "練習": "practice",
             "映画": "movie", "ドラマ": "drama", "アニメ": "anime",
             "ゲーム": "game", "遊ぶ": "play", "趣味": "hobby",
 
-            // 健康・医療関連
+            // 健康
             "医者": "doctor", "診察": "checkup", "薬": "medicine",
             "健康": "health", "ダイエット": "diet", "美容": "beauty",
 
-            // 日常・その他
+            // 日常
             "起きる": "wake up", "寝る": "sleep", "休む": "rest", "休憩": "break",
             "出かける": "go out", "帰る": "return", "帰宅": "go home",
             "友達": "friend", "家族": "family", "恋人": "partner", "親": "parent",
@@ -66,24 +71,24 @@ class TranslationService {
             "聞く": "listen", "話す": "talk", "書く": "write", "読む": "read",
             "探す": "search", "調べる": "research", "考える": "think",
 
-            // 時間関連
+            // 時間
             "今日": "today", "明日": "tomorrow", "昨日": "yesterday",
             "今週": "this week", "来週": "next week", "先週": "last week",
             "午前": "morning", "午後": "afternoon", "夜": "evening", "深夜": "night",
             "朝": "morning", "昼": "noon", "夕方": "evening",
 
-            // 場所関連
+            // 場所
             "学校": "school", "会社": "office", "家": "home", "自宅": "home",
             "図書館": "library", "カフェ": "cafe", "公園": "park",
             "駅": "station", "病院": "hospital", "銀行": "bank",
             "店": "store", "スーパー": "supermarket", "コンビニ": "convenience store",
 
-            // 動詞関連（追加）
+            // 動詞
             "する": "do", "やる": "do", "行く": "go", "来る": "come",
             "取る": "take", "持つ": "have", "使う": "use", "開く": "open",
             "閉じる": "close", "始める": "start", "終わる": "finish", "完了": "complete",
 
-            // 形容詞・状態（追加）
+            // 形容詞
             "大切": "important", "重要": "important", "急": "urgent", "緊急": "urgent",
             "簡単": "easy", "難しい": "difficult", "楽しい": "fun", "面白い": "interesting"
         ]
@@ -91,66 +96,84 @@ class TranslationService {
         var translatedWords: [String] = []
         var foundKeywords = false
 
-        // テキストから各キーワードを検索して置換
-        for (japanese, english) in keywordMappings {
-            if japaneseText.contains(japanese) {
-                // 重複を避けるため、既に追加されていない場合のみ追加
-                if !translatedWords.contains(english) {
-                    translatedWords.append(english)
-                    foundKeywords = true
-                }
+        for (ja, en) in keywordMappings where japaneseText.contains(ja) {
+            if !translatedWords.contains(en) {
+                translatedWords.append(en)
+                foundKeywords = true
             }
         }
 
-        // キーワードが見つかった場合、それらを組み合わせて英語フレーズを作成
         if foundKeywords {
-            let translatedText = translatedWords.joined(separator: " ")
-            // a-zA-Zとスペース以外の文字を全て削除
-            let cleanedText = removeNonEnglishCharacters(from: translatedText)
-            print("✅ 簡易翻訳完了: \(japaneseText) → \(cleanedText)")
-            return cleanedText
+            let cleaned = removeNonEnglishCharacters(from: translatedWords.joined(separator: " "))
+            print("✅ 簡易翻訳完了: \(japaneseText) → \(cleaned)")
+            return cleaned
         }
 
-        // キーワードが見つからない場合、ジェネリックな英語を返す
-        // （日本語をそのまま返すとImagePlayground APIがunsupportedLanguageエラーを返すため）
-        print("⚠️ キーワードが見つかりませんでした。ジェネリックな英語を使用: \(japaneseText)")
+        print("⚠️ キーワード未検出。ジェネリック英語を返す: \(japaneseText)")
         return "daily task work activity"
     }
 
-    /// テキストからa-zA-Zとスペース以外の文字を除去して英語のみにする
-    /// - Parameter text: 元のテキスト
-    /// - Returns: 英語のみのテキスト（a-zA-Zとスペースのみ）
-    func removeNonEnglishCharacters(from text: String) -> String {
-        // a-zA-Zとスペースのみを許可
-        let allowedCharacterSet = CharacterSet.letters.union(CharacterSet(charactersIn: " "))
+    /// 新：Translation フレームワークでオンデバイス翻訳（iOS 18+）
+    /// - Returns: 必ず英字とスペースのみ（API制約に合わせる）
+    func translateToEnglish(japaneseText: String) async -> String {
+        guard !japaneseText.isEmpty else { return "daily task" }
 
-        // a-zA-Z以外のアルファベット文字も含まれる可能性があるため、より厳格にフィルタリング
-        let englishOnly = text.filter { char in
-            // a-zA-Z (ASCII 65-90, 97-122) またはスペース (ASCII 32) のみを許可
-            let asciiValue = char.asciiValue ?? 0
-            return (asciiValue >= 65 && asciiValue <= 90) ||  // A-Z
-                   (asciiValue >= 97 && asciiValue <= 122) || // a-z
-                   (asciiValue == 32)                          // スペース
+        #if canImport(Translation)
+        if #available(iOS 18.0, *) {
+            do {
+                let ja = Locale.Language(identifier: "ja")
+                let en = Locale.Language(identifier: "en")
+
+                // 端末に日→英の翻訳アセットが入っているか確認
+                let availability = LanguageAvailability()
+                let status = await availability.status(from: ja, to: en) // .installed / .supported / .unsupported
+                // installed 以外は準備不足なので安全にフォールバック（UIでダウンロード促進は別途実装）:
+                guard status == .installed else {
+                    print("ℹ️ 翻訳モデル未インストール（status=\(status)）。簡易翻訳にフォールバック。")
+                    return basicTranslateToEnglish(japaneseText: japaneseText)
+                }
+
+                // モデルが入っている端末なら、セッションを直接生成して翻訳
+                // init(installedSource:target:) は UI なしの純プログラム実行向け
+                let session = try TranslationSession(installedSource: ja, target: en) // iOS 18+
+                let response = try await session.translate(japaneseText) // 単一文字列
+                let cleaned = removeNonEnglishCharacters(from: response.targetText)
+                print("✅ TranslationAPI 翻訳完了: \(japaneseText) → \(cleaned)")
+                return cleaned
+            } catch {
+                print("❌ TranslationAPI 失敗: \(error). 簡易翻訳にフォールバック。")
+                return basicTranslateToEnglish(japaneseText: japaneseText)
+            }
         }
+        #endif
 
-        // 複数のスペースを1つにまとめ、前後の空白を削除
+        // iOS 17以下や Translation が使えない環境
+        return basicTranslateToEnglish(japaneseText: japaneseText)
+    }
+
+    /// 旧API互換：同期メソッド名を残したい場合（呼び出し側がまだ await 化できないときなど）
+    @available(*, deprecated, message: "Use await translateToEnglish(japaneseText:) instead.")
+    func translateToEnglish(japaneseText: String) -> String {
+        return basicTranslateToEnglish(japaneseText: japaneseText)
+    }
+
+    // MARK: - Utilities
+
+    /// 英字＋スペースのみを許可して整形
+    func removeNonEnglishCharacters(from text: String) -> String {
+        let englishOnly = text.filter { char in
+            let ascii = char.asciiValue ?? 0
+            return (65...90).contains(ascii) || (97...122).contains(ascii) || ascii == 32
+        }
         let result = englishOnly
             .components(separatedBy: .whitespaces)
             .filter { !$0.isEmpty }
             .joined(separator: " ")
-
-        if result.isEmpty {
-            return "task"
-        }
-
-        return result
+        return result.isEmpty ? "task" : result
     }
 
-    /// テキストから日本語文字を除去して英語のみにする（後方互換性のため残す）
-    /// - Parameter text: 元のテキスト
-    /// - Returns: 日本語文字を除去したテキスト
+    /// 後方互換のため残す（内部的に removeNonEnglishCharacters を利用）
     func removeJapaneseCharacters(from text: String) -> String {
-        // removeNonEnglishCharacters を使用する方がより厳格
         return removeNonEnglishCharacters(from: text)
     }
 }
