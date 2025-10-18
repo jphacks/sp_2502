@@ -122,12 +122,15 @@ class CardViewModel: ObservableObject {
 
         // ステップ2: 翻訳と画像を生成
         generationProgress = "画像を生成中..."
+        print("🎨 画像生成開始: \(taskText)")
         guard let imagePath = await imageGenerator.generateTaskImage(taskText: taskText, emoji: emoji) else {
-            errorMessage = "画像の生成に失敗しました"
+            errorMessage = "画像の生成に失敗しました。再度お試しください。"
+            print("❌ 画像生成失敗: \(taskText)")
             isGeneratingCard = false
             generationProgress = ""
             return
         }
+        print("✅ 画像生成成功: \(imagePath)")
 
         // ステップ3: タスクカードを作成
         generationProgress = "カードを作成中..."

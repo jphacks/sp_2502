@@ -64,7 +64,8 @@ class ImageGeneratorService {
             return nil
         } catch ImageCreator.Error.unsupportedLanguage {
             print("❌ サポートされていない言語が検出されました（日本語が含まれている可能性）")
-            print("   翻訳後のテキスト: \(translateTaskText(taskText))")
+            print("   元のテキスト: \(taskText)")
+            print("   → Core Graphicsフォールバックに移行します")
             cachedImageCreator = nil
             return nil
         } catch ImageCreator.Error.notSupported {
@@ -92,11 +93,19 @@ class ImageGeneratorService {
     }
 
     private func translateTaskText(_ taskText: String) -> String {
-        if let translatedText = TranslationService.shared.translateToEnglish(japaneseText: taskText) {
-            return translatedText
-        }
-        print("⚠️ 翻訳に失敗しました。元のテキストを使用します: \(taskText)")
-        return taskText
+        let translatedText = TranslationService.shared.translateToEnglish(japaneseText: taskText)
+        print("🔄 翻訳結果: \(taskText) → \(translatedText)")
+        return translatedText
+    }
+
+    /// プロンプトに日本語が含まれているかチェック
+    private func containsJapanese(_ text: String) -> Bool {
+        let japaneseCharacterSet = CharacterSet(charactersIn: "\u{3040}"..."\u{309F}") // ひらがな
+            .union(CharacterSet(charactersIn: "\u{30A0}"..."\u{30FF}")) // カタカナ
+            .union(CharacterSet(charactersIn: "\u{4E00}"..."\u{9FAF}")) // 漢字
+            .union(CharacterSet(charactersIn: "\u{3400}"..."\u{4DBF}")) // 漢字拡張A
+
+        return text.unicodeScalars.contains { japaneseCharacterSet.contains($0) }
     }
 
     @available(iOS 18.4, *)
@@ -115,26 +124,40 @@ class ImageGeneratorService {
         var styleKeywords = [String]()
         let lowerText = taskText.lowercased()
 
-        if lowerText.contains("study") || lowerText.contains("report") || lowerText.contains("assignment") || lowerText.contains("homework") || lowerText.contains("learn") {
+        if lowerText.contains("study") || lowerText.contains("report") || lowerText.contains("assignment") || lowerText.contains("homework") || lowerText.contains("learn") || lowerText.contains("book") || lowerText.contains("textbook") {
             styleKeywords.append("books, study desk, academic atmosphere")
-        } else if lowerText.contains("work") || lowerText.contains("meeting") || lowerText.contains("business") || lowerText.contains("office") {
+        } else if lowerText.contains("work") || lowerText.contains("meeting") || lowerText.contains("business") || lowerText.contains("office") || lowerText.contains("document") {
             styleKeywords.append("business, professional workspace, modern office")
-        } else if lowerText.contains("exercise") || lowerText.contains("gym") || lowerText.contains("sport") || lowerText.contains("fitness") || lowerText.contains("run") {
+        } else if lowerText.contains("exercise") || lowerText.contains("gym") || lowerText.contains("sport") || lowerText.contains("fitness") || lowerText.contains("run") || lowerText.contains("workout") || lowerText.contains("training") {
             styleKeywords.append("fitness, sports, active lifestyle")
-        } else if lowerText.contains("cook") || lowerText.contains("food") || lowerText.contains("shopping") || lowerText.contains("grocery") {
+        } else if lowerText.contains("cook") || lowerText.contains("food") || lowerText.contains("shopping") || lowerText.contains("grocery") || lowerText.contains("meal") {
             styleKeywords.append("food, cooking, kitchen")
-        } else if lowerText.contains("music") || lowerText.contains("piano") || lowerText.contains("guitar") || lowerText.contains("instrument") {
+        } else if lowerText.contains("music") || lowerText.contains("piano") || lowerText.contains("guitar") || lowerText.contains("instrument") || lowerText.contains("song") {
             styleKeywords.append("music, instruments, musical notes")
+        } else if lowerText.contains("movie") || lowerText.contains("game") || lowerText.contains("fun") || lowerText.contains("hobby") {
+            styleKeywords.append("entertainment, fun, creative hobby")
+        } else if lowerText.contains("deadline") || lowerText.contains("urgent") || lowerText.contains("important") {
+            styleKeywords.append("urgent, important task, focus")
         } else {
             styleKeywords.append("colorful, creative, abstract, daily task")
         }
 
         // プロンプトを構築（完全に英語のみ）
-        // 絵文字は安全だが、念のため日本語文字が含まれていないことを確認
         let style = styleKeywords.joined(separator: ", ")
-        let prompt = "A simple, clean illustration representing: \(style). Minimalist style with gradient background."
+        var prompt = "A simple, clean illustration representing: \(style). Minimalist style with gradient background."
 
-        print("📝 生成プロンプト: \(prompt)")
+        // 最終チェック: プロンプトに日本語が含まれていないか確認
+        if containsJapanese(prompt) {
+            print("⚠️ プロンプトに日本語が含まれています。日本語を除去します。")
+            // 日本語を除去
+            prompt = TranslationService.shared.removeJapaneseCharacters(from: prompt)
+            // 除去後に空になった場合はデフォルトプロンプトを使用
+            if prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                prompt = "A simple, clean illustration representing daily task. Minimalist style with gradient background."
+            }
+        }
+
+        print("📝 最終プロンプト: \(prompt)")
         return prompt
     }
 
