@@ -1,3 +1,4 @@
+import { Auth0Provider } from "@auth0/nextjs-auth0/client";
 import { Geist } from "next/font/google";
 
 import { Provider } from "@/components/ui/provider";
@@ -22,9 +23,11 @@ export default function RootLayout({
   return (
     <html lang="ja" suppressHydrationWarning className={`${geist.variable}`}>
       <body className="light">
-        <Provider>
-          <TRPCReactProvider>{children}</TRPCReactProvider>
-        </Provider>
+        <Auth0Provider>
+          <Provider>
+            <TRPCReactProvider>{children}</TRPCReactProvider>
+          </Provider>
+        </Auth0Provider>
       </body>
     </html>
   );

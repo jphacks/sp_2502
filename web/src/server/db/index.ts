@@ -5,23 +5,13 @@ import postgres from "postgres";
 
 import { env } from "@/env";
 
-import { accounts } from "./schema/accounts";
 import { notes } from "./schema/notes";
-import {
-  accountsRelations,
-  sessionsRelations,
-  usersRelations,
-} from "./schema/relations";
-import { sessions } from "./schema/sessions";
+import { usersRelations } from "./schema/relations";
 import { users } from "./schema/users";
 
 const schema = {
-  accounts,
   notes,
-  sessions,
   users,
-  accountsRelations,
-  sessionsRelations,
   usersRelations,
 };
 
