@@ -30,8 +30,8 @@ export const env = createEnv({
       .default("development"),
     DB_RUNTIME: z.enum(["local", "neon"]).default("local"),
     MIGRATE_PROD_DATABASE_URL: isLocalRuntime
-      ? z.string().url().optional()
-      : z.string().url(),
+      ? z.string().url()
+      : z.string().url().optional(),
   },
 
   /**

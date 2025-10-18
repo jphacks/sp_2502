@@ -39,7 +39,7 @@
 ```bash
 # 1. リポジトリのクローン
 git clone <repository-url>
-cd t3-app-template
+cd sp_2502
 
 # 2. 環境変数の設定
 cp .env.example .env
@@ -422,7 +422,7 @@ PostgreSQLデータベースはDockerで実行：
 
 - **ポート**：5334（設定可能）
 - **デフォルト認証情報**：postgres/postgres
-- **データベース名**：template
+- **データベース名**：database
 
 ### tRPC設定
 
@@ -458,30 +458,9 @@ export const createPost = protectedProcedure
 
 環境変数は`@t3-oss/env-nextjs`を使用して検証されます。スキーマは`/src/env.js`で定義され、実行時に検証されます。
 
-#### 必須変数
-
-- `AUTH_SECRET` - NextAuthシークレット（本番環境のみ）
-- `AUTH_DISCORD_ID` - Discord OAuthアプリID
-- `AUTH_DISCORD_SECRET` - Discord OAuthシークレット
-- `POSTGRES_*` - データベース接続（DATABASE_URLに統合）
-
 #### 設定例（`.env`）
 
-```env
-# 認証シークレット（本番環境では必須）
-AUTH_SECRET="your-secret-key"
-
-# Discord OAuth（認証プロバイダー）
-AUTH_DISCORD_ID="your-discord-app-id"
-AUTH_DISCORD_SECRET="your-discord-app-secret"
-
-# PostgreSQL接続
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_DB=template
-POSTGRES_HOST=localhost
-POSTGRES_PORT=5334
-```
+[.env.example](./.env.example) を参照してください。
 
 ### MCPサーバー
 
