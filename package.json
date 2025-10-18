@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "init": "pnpm i && docker compose up -d && pnpm db:push",
+    "init": "pnpm install && docker compose up -d && pnpm db:push && pnpm lefthook install",
     "build": "next build",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
