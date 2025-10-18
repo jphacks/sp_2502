@@ -58,8 +58,25 @@ struct ContentView: View {
                             action: { viewModel.handleUndo() }
                         )
 
-                        SwipeableCardView(card: card) { direction in
-                            viewModel.handleSwipe(direction: direction)
+                        // カードスタック表示
+                        ZStack {
+                            // 後ろのカード（最大2枚）
+                            ForEach(Array(viewModel.getUpcomingCards().enumerated()), id: \.element.id) { index, upcomingCard in
+                                CardView(card: upcomingCard)
+                                    .scaleEffect(1.0 - CGFloat(index + 1) * 0.05)
+                                    .offset(y: CGFloat(index + 1) * 10)
+                                    .opacity(0.5 - Double(index) * 0.2)
+                                    .zIndex(Double(-index - 1))
+                                    .animation(.spring(response: 0.4, dampingFraction: 0.8), value: card.id)
+                            }
+
+                            // 前面のカード（スワイプ可能）
+                            SwipeableCardView(card: card) { direction in
+                                viewModel.handleSwipe(direction: direction)
+                            }
+                            .zIndex(1)
+                            .transition(.scale(scale: 0.95).combined(with: .opacity))
+                            .id(card.id)
                         }
 
                         actionButton(

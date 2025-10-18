@@ -105,7 +105,7 @@ struct SwipeableCardView: View {
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             onSwipe(direction)
-            offset = .zero
+            // offset = .zero を削除 - カードはそのまま画面外に留まる
         }
     }
 

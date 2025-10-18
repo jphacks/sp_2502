@@ -21,6 +21,14 @@ class CardViewModel: ObservableObject {
     private let imageGenerator = ImageGeneratorService.shared
     private let emojiSelector = EmojiSelectorService.shared
 
+    // カードスタック表示用
+    func getUpcomingCards(count: Int = 2) -> [Card] {
+        guard !cards.isEmpty else { return [] }
+        let startIndex = 1
+        let endIndex = min(startIndex + count, cards.count)
+        return Array(cards[startIndex..<endIndex])
+    }
+
     @MainActor
     func loadCards() async {
         isLoading = true
