@@ -1,0 +1,18 @@
+# lefthook.yml
+# Git hooks configuration using lefthook
+# https://lefthook.dev/configuration/
+
+pre-commit:
+  parallel: false
+  commands:
+    typecheck:
+      run: pnpm typecheck
+      fail_text: "型チェックに失敗しました。修正が必要です。"
+
+    lint:
+      run: pnpm lint
+      fail_text: "Lintチェックに失敗しました。修正が必要です。"
+
+    format:
+      run: pnpm format:check
+      fail_text: "フォーマットチェックに失敗しました。修正が必要です。"
