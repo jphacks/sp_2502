@@ -26,20 +26,20 @@ export default async function Home() {
           <Text fontSize="48px" fontWeight="bold" color="#FFBE45">
             タスクのカケラ
           </Text>
-          <Button
-            as={Link}
-            href="/auth/login"
-            size="lg"
-            bg="#FFBE45"
-            color="#000000"
-            fontSize="24px"
-            px={12}
-            py={8}
-            borderRadius="20px"
-            _hover={{ bg: "#FFD166" }}
-            _active={{ bg: "#FFAA00" }}>
-            ログイン
-          </Button>
+          <Link href="/auth/login">
+            <Button
+              size="lg"
+              bg="#FFBE45"
+              color="#000000"
+              fontSize="24px"
+              px={12}
+              py={8}
+              borderRadius="20px"
+              _hover={{ bg: "#FFD166" }}
+              _active={{ bg: "#FFAA00" }}>
+              ログイン
+            </Button>
+          </Link>
         </VStack>
       </Box>
     );

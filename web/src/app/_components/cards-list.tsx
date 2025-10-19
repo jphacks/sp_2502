@@ -6,7 +6,7 @@ import type { TaskDTO } from "@/server/modules/task/_dto";
 
 type CardListProps = {
   items: TaskDTO[];
-  onSelect: (task: TaskDTO) => void;
+  onSelect: (id: string) => void;
 };
 
 export default function CardList({ items, onSelect }: CardListProps) {
@@ -22,7 +22,7 @@ export default function CardList({ items, onSelect }: CardListProps) {
             borderRadius="0"
             border="none"
             bgImage="url('/images/choco.svg')"
-            onClick={() => onSelect(item)}>
+            onClick={() => onSelect(item.id)}>
             <CardBody
               display="flex"
               alignItems="center"
