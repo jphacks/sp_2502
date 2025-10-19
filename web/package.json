@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "init": "pnpm install && docker compose up -d && pnpm db:push && pnpm lefthook install",
-    "build": "next build",
+    "build": "next build --turbo",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:migrate:prod": "DB_RUNTIME=neon drizzle-kit migrate",
