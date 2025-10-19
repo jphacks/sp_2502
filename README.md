@@ -93,8 +93,6 @@ web, ios それぞれのディレクトリ上に CLAUDE.md を作成して適宜
 
 2日間という短い期間で実装できるように、 CSS フレームワークである Chakra UI v3 を使用しました。
 
-#### 7. データベース設計
-
 ## 開発技術
 
 ### 活用した技術
@@ -142,6 +140,5 @@ web, ios それぞれのディレクトリ上に CLAUDE.md を作成して適宜
 #### ハッカソンで開発した独自機能・技術
 
 - カードのフリック操作
-- iOS と
 - [sp_2502/CLAUDE.md at main · jphacks/sp_2502 · GitHub](https://github.com/jphacks/sp_2502/blob/main/CLAUDE.md)
 - [sp_2502/web/.claude at main · jphacks/sp_2502 · GitHub](https://github.com/jphacks/sp_2502/tree/main/web/.claude)
