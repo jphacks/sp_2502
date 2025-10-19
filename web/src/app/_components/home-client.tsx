@@ -1,6 +1,14 @@
 "use client";
 
-import { Box, HStack, VStack, Text, Link, Image } from "@chakra-ui/react";
+import {
+  Box,
+  HStack,
+  VStack,
+  Text,
+  Link,
+  Image,
+  Button,
+} from "@chakra-ui/react";
 import { useState } from "react";
 import { FaAngleDown } from "react-icons/fa6";
 
@@ -17,6 +25,8 @@ type HomeClientProps = {
 export const HomeClient = ({ session }: HomeClientProps) => {
   const [taskSelect, setTaskSelect] = useState<TaskDTO | null>(null);
 
+  const utils = api.useUtils();
+
   // アクティブタスクの一覧を取得
   const { data: activeTasksData } = api.task.activeList.useQuery({
     order: "desc",
@@ -28,6 +38,9 @@ export const HomeClient = ({ session }: HomeClientProps) => {
     { enabled: !!taskSelect }, // taskSelectがnullでない時のみクエリ実行
   );
 
+  // タスク完了処理のmutation
+  const statusUpdate = api.task.statusUpdate.useMutation();
+
   const handleSelectTask = (id: string) => {
     const task = activeTasksData?.tasks.find(t => t.id === id);
     if (task) {
@@ -35,15 +48,62 @@ export const HomeClient = ({ session }: HomeClientProps) => {
     }
   };
 
+  const handleTaskComplete = () => {
+    if (!taskSelect) return;
+
+    const parentId = taskSelect.parentId; // 完了前に親IDを保存
+
+    statusUpdate.mutate(
+      {
+        taskId: taskSelect.id,
+        status: "completed",
+      },
+      {
+        onSuccess: () => {
+          void utils.task.activeList.refetch().then(() => {
+            if (!activeTasksData) {
+              setTaskSelect(null);
+              return;
+            }
+
+            const updatedTasks = activeTasksData.tasks;
+
+            if (parentId) {
+              // 親タスクがactiveになったか確認
+              const parentTask = updatedTasks.find(t => t.id === parentId);
+
+              if (parentTask) {
+                // 親タスクがactiveになった → 親を選択
+                setTaskSelect(parentTask);
+              } else {
+                // 親タスクはまだwaiting → 他のactiveな兄弟タスクを探す
+                const sibling = updatedTasks.find(t => t.parentId === parentId);
+                if (sibling) {
+                  setTaskSelect(sibling);
+                } else {
+                  setTaskSelect(null);
+                }
+              }
+            } else {
+              setTaskSelect(null);
+            }
+          });
+        },
+      },
+    );
+  };
+
   return (
     <HStack w="100vw" h="100vh" gap="0px" bg="white" overflow="hidden">
       <Box bg="#EEEEEE" w="300px" minW="330px" h="full">
         <VStack h="full" ml="20px">
-          <Box
+          <Button
             mt="33px"
             w="203px"
             h="192px"
             border="none"
+            bg="transparent"
+            onClick={handleTaskComplete}
             bgImage="url('/images/check-2.svg')"
           />
           <Box

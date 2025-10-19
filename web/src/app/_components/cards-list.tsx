@@ -22,6 +22,7 @@ export default function CardList({ items, onSelect }: CardListProps) {
             borderRadius="0"
             border="none"
             bgImage="url('/images/choco.svg')"
+            cursor="pointer"
             onClick={() => onSelect(item.id)}>
             <CardBody
               display="flex"
