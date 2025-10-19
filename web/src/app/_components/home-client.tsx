@@ -39,7 +39,7 @@ export const HomeClient = ({ session }: HomeClientProps) => {
   );
 
   // タスク完了処理のmutation
-  const statusUpdate = api.task.statusUpdate.useMutation();
+  const completeTask = api.task.complete.useMutation();
 
   const handleSelectTask = (id: string) => {
     const task = activeTasksData?.tasks.find(t => t.id === id);
@@ -51,43 +51,16 @@ export const HomeClient = ({ session }: HomeClientProps) => {
   const handleTaskComplete = () => {
     if (!taskSelect) return;
 
-    const parentId = taskSelect.parentId; // 完了前に親IDを保存
-
-    statusUpdate.mutate(
+    completeTask.mutate(
       {
         taskId: taskSelect.id,
-        status: "completed",
       },
       {
-        onSuccess: () => {
-          void utils.task.activeList.refetch().then(() => {
-            if (!activeTasksData) {
-              setTaskSelect(null);
-              return;
-            }
-
-            const updatedTasks = activeTasksData.tasks;
-
-            if (parentId) {
-              // 親タスクがactiveになったか確認
-              const parentTask = updatedTasks.find(t => t.id === parentId);
-
-              if (parentTask) {
-                // 親タスクがactiveになった → 親を選択
-                setTaskSelect(parentTask);
-              } else {
-                // 親タスクはまだwaiting → 他のactiveな兄弟タスクを探す
-                const sibling = updatedTasks.find(t => t.parentId === parentId);
-                if (sibling) {
-                  setTaskSelect(sibling);
-                } else {
-                  setTaskSelect(null);
-                }
-              }
-            } else {
-              setTaskSelect(null);
-            }
-          });
+        onSuccess: data => {
+          // サーバーから次のタスクとアクティブタスク一覧を受け取る
+          setTaskSelect(data.nextTask);
+          // アクティブタスク一覧を更新
+          void utils.task.activeList.invalidate();
         },
       },
     );

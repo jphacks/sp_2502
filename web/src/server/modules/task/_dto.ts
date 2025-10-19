@@ -31,3 +31,9 @@ export const toDTO = (task: SelectTask): TaskDTO => {
     parentId: task.parentId ? TaskId.parse(task.parentId) : null,
   };
 };
+
+export const TaskCompleteResultDTO = z.object({
+  nextTask: TaskDTO.nullable(),
+  activeTasks: z.array(TaskDTO),
+});
+export type TaskCompleteResultDTO = z.infer<typeof TaskCompleteResultDTO>;

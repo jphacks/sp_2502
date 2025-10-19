@@ -1,5 +1,6 @@
 import { createTRPCRouter } from "@/server/api/trpc";
 import { activeListTasks } from "@/server/modules/task/activeList/endpoint.trpc";
+import { completeTask } from "@/server/modules/task/complete/endpoint.trpc";
 import { deleteTask } from "@/server/modules/task/delete/endpoint.trpc";
 import { projectCreateTask } from "@/server/modules/task/projectCreate/endpoint.trpc";
 import { selectTask } from "@/server/modules/task/select/endpoint.trpc";
@@ -13,4 +14,5 @@ export const taskRouter = createTRPCRouter({
   statusUpdate: statusUpdateTask,
   select: selectTask,
   unprocessedList: unprocessedListTasks,
+  complete: completeTask,
 });
