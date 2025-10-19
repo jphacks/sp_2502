@@ -61,7 +61,7 @@ struct SwipeableCardView: View {
 
         if horizontalSwipe {
             if abs(translation.width) > swipeThreshold {
-                let direction: SwipeDirection = translation.width > 0 ? .right : .cut
+                let direction: SwipeDirection = translation.width > 0 ? .like : .cut
                 performSwipe(direction: direction)
             } else {
                 offset = .zero
@@ -70,7 +70,7 @@ struct SwipeableCardView: View {
         } else {
             // 上向きのスワイプのみ許可
             if translation.height < -swipeThreshold {
-                performSwipe(direction: .up)
+                performSwipe(direction: .delete)
             } else {
                 offset = .zero
                 onSwipeProgress?(0) // スワイプキャンセル時は進行度をリセット
@@ -81,11 +81,9 @@ struct SwipeableCardView: View {
     private func performSwipe(direction: SwipeDirection) {
         let exitOffset: CGSize
         switch direction {
-        case .up:
+        case .delete:
             exitOffset = CGSize(width: 0, height: -CardConstants.Swipe.exitOffset)
-        case .left:
-            exitOffset = CGSize(width: -CardConstants.Swipe.exitOffset, height: 0)
-        case .right:
+        case .like:
             exitOffset = CGSize(width: CardConstants.Swipe.exitOffset, height: 0)
         case .cut:
             exitOffset = CGSize(width: -CardConstants.Swipe.exitOffset, height: 0)
@@ -107,10 +105,10 @@ struct SwipeableCardView: View {
         let horizontalSwipe = abs(offset.width) > abs(offset.height)
 
         if horizontalSwipe {
-            return offset.width > 0 ? .right : .cut
+            return offset.width > 0 ? .like : .cut
         } else {
             // 上向きのスワイプのみ表示
-            return offset.height < 0 ? .up : nil
+            return offset.height < 0 ? .delete : nil
         }
     }
 

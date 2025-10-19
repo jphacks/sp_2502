@@ -53,11 +53,9 @@ class CardViewModel: ObservableObject {
 
         let action: String
         switch direction {
-        case .up:
+        case .delete:
             action = "delete"
-        case .left:
-            action = "cut"
-        case .right:
+        case .like:
             action = "like"
         case .cut:
             action = "cut"
@@ -98,12 +96,12 @@ class CardViewModel: ObservableObject {
 
     @MainActor
     func handleDelete() {
-        handleSwipe(direction: .up)
+        handleSwipe(direction: .delete)
     }
 
     @MainActor
     func handleLike() {
-        handleSwipe(direction: .right)
+        handleSwipe(direction: .like)
     }
 
     @MainActor

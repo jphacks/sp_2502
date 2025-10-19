@@ -1,9 +1,8 @@
 import Foundation
 
 enum SwipeDirection {
-    case up
-    case left
-    case right
+    case delete
+    case like
     case cut
 }
 

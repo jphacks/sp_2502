@@ -330,13 +330,11 @@ struct ContentView: View {
     // スワイプ方向に応じたアイコン
     private func iconForDirection(_ direction: SwipeDirection) -> String {
         switch direction {
-        case .up:
+        case .delete:
             return "trash"
-        case .right:
+        case .like:
             return "hand.thumbsup.fill"
         case .cut:
-            return "scissors"
-        case .left:
             return "scissors"
         }
     }
@@ -344,13 +342,11 @@ struct ContentView: View {
     // スワイプ方向に応じたテキスト
     private func textForDirection(_ direction: SwipeDirection) -> String {
         switch direction {
-        case .up:
+        case .delete:
             return "Delete"
-        case .right:
+        case .like:
             return "Like"
         case .cut:
-            return "Cut"
-        case .left:
             return "Cut"
         }
     }
@@ -358,13 +354,11 @@ struct ContentView: View {
     // スワイプ方向に応じた色
     private func colorForDirection(_ direction: SwipeDirection) -> Color {
         switch direction {
-        case .up:
+        case .delete:
             return .red
-        case .right:
+        case .like:
             return .green
         case .cut:
-            return Color(red: 1.0, green: 0.6, blue: 0.4)
-        case .left:
             return Color(red: 1.0, green: 0.6, blue: 0.4)
         }
     }
