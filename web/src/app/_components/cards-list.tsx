@@ -45,10 +45,13 @@ export default function CardList({ items }: CardListProps) {
       {items.map((item) => (
         <WrapItem key={item.id}>
             <Card.Root
-              w="268px"
-              h="165px"
+              w="278px"
+              h="175px"
+              bg="transparent"
+              borderRadius="0"
               border="none"
               bgImage="url('/images/choco.svg')"
+              
             >
             {/* <CardHeader>
               <Heading size="md">{item.title}</Heading>
