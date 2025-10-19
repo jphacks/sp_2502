@@ -13,7 +13,7 @@ export const TaskDTO = z.object({
   status: z.enum(["unprocessed", "active", "completed", "waiting"]),
   date: z.date().nullable(),
   priority: z.string().nullable(),
-  parentId: TaskId,
+  parentId: TaskId.nullable(),
 });
 export type TaskDTO = z.infer<typeof TaskDTO>;
 
@@ -28,6 +28,6 @@ export const toDTO = (task: SelectTask): TaskDTO => {
     status: task.status,
     date: task.date,
     priority: task.priority,
-    parentId: TaskId.parse(task.parentId),
+    parentId: task.parentId ? TaskId.parse(task.parentId) : null,
   };
 };
