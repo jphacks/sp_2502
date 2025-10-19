@@ -1,7 +1,10 @@
 import { Box, HStack, VStack, Text } from "@chakra-ui/react";
 import { FaAngleDown } from "react-icons/fa6";
 
+// import { Global } from "@emotion/react";
 import CardList from "@/app/_components/cards-list";
+// import { Provider } from "@/components/ui/provider";
+import { getSession } from "@/server/auth/helpers";
 import { HydrateClient } from "@/trpc/server";
 
 export default async function Home() {
@@ -21,6 +24,8 @@ export default async function Home() {
     { id: 2, taskname: "参考文献探し" },
     { id: 3, taskname: "心理学レポート" },
   ];
+
+  // const session = await getSession();
 
   return (
     <HydrateClient>
@@ -80,7 +85,6 @@ export default async function Home() {
             </Box>
           </VStack>
         </Box>
-
         <Box
           h="full"
           w="75.4px"
