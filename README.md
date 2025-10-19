@@ -78,13 +78,17 @@
 
 ユーザー認証には Auth0 を使用し、Google アカウント / Apple アカウントでの安全なログインを可能にしました。
 
-#### 5. データベース設計
+#### 5. AIコーディングのためのガイドライン
 
-#### 6. AIコーディングのためのガイドライン
+web/.claude/hooks に品質チェック用のシェルスクリプトを作成し、 AI のトークン消費を抑えて、AIの編集後に自動で品質チェックを行うように工夫しました。  
+また、 web/.claude/commands や web/.claude/agents に　AI が自律して usecase, frontend を作成できるコマンドやSubAgentを用意し、高速な開発を実現しました。
+web, ios それぞれのディレクトリ上に CLAUDE.md を作成して適宜更新するとともに、プロジェクトルートにも CLAUDE.md を作成し、ディレクトリを横断したエラー修正や機能追加を行えるようにしました。
 
-#### 7. Chakra UI + React での UI 実装
+#### 6. Chakra UI + React での UI 実装
 
 2日間という短い期間で実装できるように、 CSS フレームワークである Chakra UI v3 を使用しました。
+
+#### 7. データベース設計
 
 ## 開発技術
 
@@ -92,14 +96,29 @@
 
 #### API・データ
 
-- Open AI
+- OpenAI API (GPT-4.1-mini)
 
 #### フレームワーク・ライブラリ・モジュール
 
-- t3Stack
-  - Next.js
-  - tRPC
-- Swift UI
+**iOS**
+- Swift 5.0
+- SwiftUI
+- Auth0 (iOS SDK)
+- Speech Framework
+
+**Web**
+- Next.js 15 (App Router)
+- React 19
+- TypeScript 5.8
+- tRPC 11
+- Chakra UI v3
+- Auth0 (@auth0/nextjs-auth0 v4)
+- Drizzle ORM
+- SuperJSON
+
+#### データベース
+
+- PostgreSQL
 
 #### デバイス
 
