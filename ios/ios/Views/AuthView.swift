@@ -8,9 +8,21 @@ struct AuthView: View {
 
     var body: some View {
         Group {
-            if !isAuthenticated {
+            if isAuthenticated {
                 VStack {
                     ContentView()
+                    Button("PostTest") {
+                        Task {
+                            print("POST")
+                            await tRPCService.shared.postNote(token: accessToken)
+                        }
+                    }
+                    Button("AuthTest") {
+                        Task {
+                            print("リクエスト送ります")
+                            await tRPCService.shared.fetchList(token: accessToken)
+                        }
+                    }
                     Button("Logout", action: self.logout)
                 }
             } else {
