@@ -1,5 +1,4 @@
 import { aiRouter } from "@/server/api/routers/ai";
-import { noteRouter } from "@/server/api/routers/note";
 import { taskRouter } from "@/server/api/routers/task";
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 
@@ -10,7 +9,6 @@ import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
  */
 export const appRouter = createTRPCRouter({
   ai: aiRouter,
-  note: noteRouter,
   task: taskRouter,
 });
 

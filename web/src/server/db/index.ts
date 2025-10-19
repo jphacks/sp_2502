@@ -5,7 +5,6 @@ import postgres from "postgres";
 
 import { env } from "@/env";
 
-import { notes } from "./schema/notes";
 import { projects } from "./schema/projects";
 import {
   projectsRelations,
@@ -18,7 +17,6 @@ import { tasks, taskStatusEnum } from "./schema/tasks";
 import { users } from "./schema/users";
 
 const schema = {
-  notes,
   users,
   projects,
   tasks,

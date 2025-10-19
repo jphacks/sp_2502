@@ -44,10 +44,15 @@ export const execute = async (
       }
 
       const task = taskResult.data;
-      taskChain.unshift(toDTO(task)); // 配列の先頭に追加（rootから順になるように）
 
       // 親タスクIDを取得
       currentTaskId = task.parentId;
+
+      // 最初のタスク（指定されたタスク自身）はスキップ
+      if (depth > 0) {
+        taskChain.push(toDTO(task)); // 配列の末尾に追加（親から順になるように）
+      }
+
       depth++;
     }
 

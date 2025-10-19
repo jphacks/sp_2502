@@ -29,9 +29,17 @@ CREATE TABLE "database_task" (
 	"updatedAt" timestamp with time zone
 );
 --> statement-breakpoint
-ALTER TABLE "database_note" ALTER COLUMN "createdAt" SET DEFAULT '2025-10-19T02:08:33.869Z';--> statement-breakpoint
+CREATE TABLE "database_user" (
+	"id" varchar(255) PRIMARY KEY NOT NULL,
+	"name" varchar(255),
+	"email" varchar(255),
+	"emailVerified" timestamp with time zone,
+	"image" varchar(255)
+);
+--> statement-breakpoint
 ALTER TABLE "database_project" ADD CONSTRAINT "database_project_userId_database_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."database_user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "database_task_children" ADD CONSTRAINT "database_task_children_taskId_database_task_id_fk" FOREIGN KEY ("taskId") REFERENCES "public"."database_task"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "database_task_children" ADD CONSTRAINT "database_task_children_childId_database_task_id_fk" FOREIGN KEY ("childId") REFERENCES "public"."database_task"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "database_task" ADD CONSTRAINT "database_task_userId_database_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."database_user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "database_task" ADD CONSTRAINT "database_task_projectId_database_project_id_fk" FOREIGN KEY ("projectId") REFERENCES "public"."database_project"("id") ON DELETE no action ON UPDATE no action;
+ALTER TABLE "database_task" ADD CONSTRAINT "database_task_projectId_database_project_id_fk" FOREIGN KEY ("projectId") REFERENCES "public"."database_project"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "user_email_unique" ON "database_user" USING btree ("email");
