@@ -9,7 +9,7 @@ struct SwipeableCardView: View {
     @State private var offset = CGSize.zero
     @State private var isDragging = false
 
-    private let swipeThreshold: CGFloat = 100
+    private let swipeThreshold: CGFloat = CardConstants.Swipe.threshold
 
     init(
         card: Card,
@@ -26,8 +26,8 @@ struct SwipeableCardView: View {
     var body: some View {
         CardView(card: card)
             .offset(offset)
-            .rotationEffect(.degrees(Double(offset.width / 20)))
-            .opacity(isDragging ? 0.8 : 1.0)
+            .rotationEffect(.degrees(Double(offset.width / CardConstants.Swipe.rotationFactor)))
+            .opacity(isDragging ? CardConstants.Swipe.draggingOpacity : 1.0)
             .gesture(
                 DragGesture()
                     .onChanged { gesture in
@@ -82,21 +82,21 @@ struct SwipeableCardView: View {
         let exitOffset: CGSize
         switch direction {
         case .up:
-            exitOffset = CGSize(width: 0, height: -500)
+            exitOffset = CGSize(width: 0, height: -CardConstants.Swipe.exitOffset)
         case .left:
-            exitOffset = CGSize(width: -500, height: 0)
+            exitOffset = CGSize(width: -CardConstants.Swipe.exitOffset, height: 0)
         case .right:
-            exitOffset = CGSize(width: 500, height: 0)
+            exitOffset = CGSize(width: CardConstants.Swipe.exitOffset, height: 0)
         case .cut:
-            exitOffset = CGSize(width: -500, height: 0)
+            exitOffset = CGSize(width: -CardConstants.Swipe.exitOffset, height: 0)
         }
 
-        withAnimation(.easeOut(duration: 0.3)) {
+        withAnimation(.easeOut(duration: CardConstants.Swipe.animationDuration)) {
             offset = exitOffset
             onSwipeProgress?(1.0) // スワイプ完了時は進行度を最大に
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + CardConstants.Swipe.animationDuration) {
             onSwipe(direction)
             onSwipeProgress?(0) // スワイプ後は進行度をリセット
             // offset = .zero を削除 - カードはそのまま画面外に留まる
@@ -115,42 +115,15 @@ struct SwipeableCardView: View {
     }
 
     private func iconForDirection(_ direction: SwipeDirection) -> String {
-        switch direction {
-        case .up:
-            return "trash"
-        case .right:
-            return "hand.thumbsup.fill"
-        case .cut:
-            return "scissors"
-        case .left:
-            return "scissors"
-        }
+        CardConstants.Swipe.config(for: direction).icon
     }
 
     private func textForDirection(_ direction: SwipeDirection) -> String {
-        switch direction {
-        case .up:
-            return "Delete"
-        case .right:
-            return "Like"
-        case .cut:
-            return "Cut"
-        case .left:
-            return "Cut"
-        }
+        CardConstants.Swipe.config(for: direction).text
     }
 
     private func colorForDirection(_ direction: SwipeDirection) -> Color {
-        switch direction {
-        case .up:
-            return .red
-        case .right:
-            return .green
-        case .cut:
-            return Color(red: 1.0, green: 0.6, blue: 0.4)
-        case .left:
-            return Color(red: 1.0, green: 0.6, blue: 0.4)
-        }
+        CardConstants.Swipe.config(for: direction).color
     }
 }
 
