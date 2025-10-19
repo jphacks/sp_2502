@@ -18,6 +18,10 @@ final class tRPCService {
     static let shared = tRPCService()
     private init() {}
 
+    // ベースURL: ローカル開発環境用
+    private let baseURL = "http://localhost:3304/api/trpc"
+    // 本番環境用（コメントアウト）: "https://sp-2502.vercel.app/api/trpc"
+
     // 例: モデルは各自で定義
     // struct Note: Decodable { ... }
 
@@ -29,6 +33,7 @@ final class tRPCService {
 
     // MARK: - SuperJSON → plain JSON 変換
     func superJSONToPlainJSONData(_ data: Data, unwrapSingleArray: Bool = true) throws -> Data {
+        print("🔄 [tRPC] SuperJSON変換開始 (データサイズ: \(data.count) bytes)")
         let obj = try JSONSerialization.jsonObject(with: data, options: [.fragmentsAllowed])
         let unwrapped = unwrap(any: obj)
         let normalized = unwrapSingleArray ? flattenSingleArrayObject(unwrapped) : unwrapped
@@ -119,7 +124,8 @@ final class tRPCService {
 
     /// プロジェクト+タスクを作成
     func createProjectAndTask(projectName: String, taskName: String, accessToken: String? = nil) async throws -> Card {
-        var comp = URLComponents(string: "https://sp-2502.vercel.app/api/trpc/task.projectCreate")!
+        print("📝 [tRPC] createProjectAndTask開始 - プロジェクト: \(projectName), タスク: \(taskName)")
+        var comp = URLComponents(string: "\(baseURL)/task.projectCreate")!
         let inputObj: [String: Any] = [
             "json": [
                 "projectName": projectName,
@@ -137,24 +143,33 @@ final class tRPCService {
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.setValue("application/json", forHTTPHeaderField: "Accept")
 
+        print("🌐 [tRPC] リクエスト送信: \(req.httpMethod ?? "GET") \(comp.url?.absoluteString ?? "")")
         let (data, response) = try await URLSession.shared.data(for: req)
 
         guard let httpResponse = response as? HTTPURLResponse else {
+            print("❌ [tRPC] 無効なレスポンス")
             throw tRPCError.invalidResponse
         }
 
+        print("✅ [tRPC] レスポンス受信: ステータス \(httpResponse.statusCode), データサイズ \(data.count) bytes")
         guard (200...299).contains(httpResponse.statusCode) else {
+            print("❌ [tRPC] サーバーエラー: \(httpResponse.statusCode)")
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("📄 [tRPC] エラーレスポンス内容: \(responseString)")
+            }
             throw tRPCError.serverError(statusCode: httpResponse.statusCode)
         }
 
         let plain = try superJSONToPlainJSONData(data, unwrapSingleArray: false)
         let task = try decoder.decode(Card.self, from: plain)
+        print("✅ [tRPC] createProjectAndTask完了")
         return task
     }
 
     /// タスクを削除
     func deleteTask(taskId: String, accessToken: String? = nil) async throws {
-        var comp = URLComponents(string: "https://sp-2502.vercel.app/api/trpc/task.delete")!
+        print("🗑️ [tRPC] deleteTask開始 - タスクID: \(taskId)")
+        var comp = URLComponents(string: "\(baseURL)/task.delete")!
         let inputObj: [String: Any] = [
             "json": [
                 "taskId": taskId
@@ -171,15 +186,23 @@ final class tRPCService {
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.setValue("application/json", forHTTPHeaderField: "Accept")
 
-        let (_, response) = try await URLSession.shared.data(for: req)
+        print("🌐 [tRPC] リクエスト送信: \(req.httpMethod ?? "GET") \(comp.url?.absoluteString ?? "")")
+        let (data, response) = try await URLSession.shared.data(for: req)
 
         guard let httpResponse = response as? HTTPURLResponse else {
+            print("❌ [tRPC] 無効なレスポンス")
             throw tRPCError.invalidResponse
         }
 
+        print("✅ [tRPC] レスポンス受信: ステータス \(httpResponse.statusCode)")
         guard (200...299).contains(httpResponse.statusCode) else {
+            print("❌ [tRPC] サーバーエラー: \(httpResponse.statusCode)")
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("📄 [tRPC] エラーレスポンス内容: \(responseString)")
+            }
             throw tRPCError.serverError(statusCode: httpResponse.statusCode)
         }
+        print("✅ [tRPC] deleteTask完了")
     }
 
     struct SplitTaskResult: Decodable {
@@ -198,7 +221,8 @@ final class tRPCService {
 
     /// AIでタスクを分割
     func splitTask(taskId: String, accessToken: String? = nil) async throws -> SplitTaskResult {
-        var comp = URLComponents(string: "https://sp-2502.vercel.app/api/trpc/ai.splitTask")!
+        print("✂️ [tRPC] splitTask開始 - タスクID: \(taskId)")
+        var comp = URLComponents(string: "\(baseURL)/ai.splitTask")!
         let inputObj: [String: Any] = [
             "json": [
                 "task_id": taskId
@@ -215,18 +239,26 @@ final class tRPCService {
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.setValue("application/json", forHTTPHeaderField: "Accept")
 
+        print("🌐 [tRPC] リクエスト送信: \(req.httpMethod ?? "GET") \(comp.url?.absoluteString ?? "")")
         let (data, response) = try await URLSession.shared.data(for: req)
 
         guard let httpResponse = response as? HTTPURLResponse else {
+            print("❌ [tRPC] 無効なレスポンス")
             throw tRPCError.invalidResponse
         }
 
+        print("✅ [tRPC] レスポンス受信: ステータス \(httpResponse.statusCode), データサイズ \(data.count) bytes")
         guard (200...299).contains(httpResponse.statusCode) else {
+            print("❌ [tRPC] サーバーエラー: \(httpResponse.statusCode)")
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("📄 [tRPC] エラーレスポンス内容: \(responseString)")
+            }
             throw tRPCError.serverError(statusCode: httpResponse.statusCode)
         }
 
         let plain = try superJSONToPlainJSONData(data, unwrapSingleArray: false)
         let result = try decoder.decode(SplitTaskResult.self, from: plain)
+        print("✅ [tRPC] splitTask完了 - 第1タスク: \(result.firstTaskName), 第2タスク: \(result.secondTaskName)")
         return result
     }
 }
