@@ -120,7 +120,7 @@ struct CardView: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .aspectRatio(3/4, contentMode: .fit)
     }
 
     @ViewBuilder
