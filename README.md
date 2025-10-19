@@ -1,9 +1,5 @@
 # パキッと クネクネタスク
 ![JP_title](https://github.com/user-attachments/assets/66516b8a-08c8-48d3-8cf6-c996db8847f1)
-<img width="1976" height="4000" alt="b808ea7dedf" src="https://github.com/user-attachments/assets/aa752e3f-c373-46d1-800f-fb732913a62f" />
-<img width="4000" height="3000" alt="V3Irsd7od (1)" src="https://github.com/user-attachments/assets/b0926102-5237-4c1f-879f-d3c57b7123ee" />
-
-
 
 ## 製品概要
 「何もしたくない時間」にタスクを分割し、取り組むハードルを下げるサービス
