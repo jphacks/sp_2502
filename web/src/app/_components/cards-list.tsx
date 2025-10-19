@@ -1,16 +1,6 @@
 "use client";
 
-import {
-  Wrap,
-  WrapItem,
-  Card,
-  CardHeader,
-  CardBody,
-  Heading,
-  Text,
-  Center,
-} from "@chakra-ui/react";
-import { Chocolate_Classical_Sans } from "next/font/google";
+import { Wrap, WrapItem, Card, CardBody, Text } from "@chakra-ui/react";
 
 // export default function CardList({ items }) {
 //   return (
@@ -42,26 +32,25 @@ type CardListProps = {
 export default function CardList({ items }: CardListProps) {
   return (
     <Wrap gap="40px" justifyContent="center">
-      {items.map((item) => (
+      {items.map(item => (
         <WrapItem key={item.id}>
-            <Card.Root
-              w="278px"
-              h="175px"
-              bg="transparent"
-              borderRadius="0"
-              border="none"
-              bgImage="url('/images/choco.svg')"
-              
-            >
+          <Card.Root
+            w="278px"
+            h="175px"
+            bg="transparent"
+            borderRadius="0"
+            border="none"
+            bgImage="url('/images/choco.svg')">
             {/* <CardHeader>
               <Heading size="md">{item.title}</Heading>
             </CardHeader> */}
             <CardBody
               display="flex"
               alignItems="center"
-              justifyContent="center"
-            >
-              <Text fontSize="32px" color="#FFBE45">{item.description}</Text>
+              justifyContent="center">
+              <Text fontSize="32px" color="#FFBE45">
+                {item.description}
+              </Text>
             </CardBody>
           </Card.Root>
         </WrapItem>

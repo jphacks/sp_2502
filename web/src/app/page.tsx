@@ -1,10 +1,7 @@
 import { Box, HStack, VStack, Text } from "@chakra-ui/react";
 import { FaAngleDown } from "react-icons/fa6";
 
-// import { Global } from "@emotion/react";
 import CardList from "@/app/_components/cards-list";
-// import { Provider } from "@/components/ui/provider";
-import { getSession } from "@/server/auth/helpers";
 import { HydrateClient } from "@/trpc/server";
 
 export default async function Home() {
@@ -24,8 +21,6 @@ export default async function Home() {
     { id: 2, taskname: "参考文献探し" },
     { id: 3, taskname: "心理学レポート" },
   ];
-
-  // const session = await getSession();
 
   return (
     <HydrateClient>
@@ -93,6 +88,34 @@ export default async function Home() {
         {/* bgImage="url('/images/bg-red.svg')" */}
         <Box flex="1" bg="#860F0F" minW="300px" h="full" overflowY="auto" p={5}>
           <VStack w="full" h="full" gap={10}>
+            {/* 認証バー */}
+            {/* <HStack
+              w="100%"
+              justifyContent="flex-end"
+              px={4}
+              py={2}
+              bg="rgba(0,0,0,0.2)"
+              borderRadius="8px">
+              {session?.user ? (
+                <HStack gap={3} fontSize="14px" color="white">
+                  <Text opacity={0.8}>
+                    {session.user.name ?? session.user.email ?? "ユーザー"}
+                  </Text>
+                  <Link href="/auth/logout" color="#FFBE45" opacity={0.9}>
+                    ログアウト
+                  </Link>
+                </HStack>
+              ) : (
+                <Link
+                  href="/auth/login"
+                  fontSize="14px"
+                  color="#FFBE45"
+                  opacity={0.9}>
+                  ログイン
+                </Link>
+              )}
+            </HStack> */}
+
             <Box
               bg="#A60000"
               w="100%"
