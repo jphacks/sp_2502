@@ -1,8 +1,3 @@
-//
-//  CardView.swift
-//  ios
-//
-
 import SwiftUI
 import Auth0
 

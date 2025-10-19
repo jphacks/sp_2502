@@ -1,8 +1,3 @@
-//
-//  ProfileView.swift
-//  ios
-//
-
 import SwiftUI
 
 struct ProfileView: View {

@@ -1,8 +1,3 @@
-//
-//  APIService.swift
-//  ios
-//
-
 import Foundation
 
 enum APIError: Error {
