@@ -1,11 +1,10 @@
+import { createSystem, defaultConfig } from "@chakra-ui/react";
 import { Geist } from "next/font/google";
 
 import { Provider } from "@/components/ui/provider";
 import { TRPCReactProvider } from "@/trpc/react";
 
 import type { Metadata } from "next";
-
-import { createSystem, defaultConfig } from "@chakra-ui/react"
 
 export const system = createSystem(defaultConfig, {
   theme: {
@@ -16,7 +15,7 @@ export const system = createSystem(defaultConfig, {
       },
     },
   },
-})
+});
 
 export const metadata: Metadata = {
   title: "Create T3 App",
