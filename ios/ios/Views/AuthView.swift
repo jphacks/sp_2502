@@ -14,7 +14,7 @@ struct AuthView: View {
                     Button("PostTest") {
                         Task {
                             print("POST")
-                            await tRPCService.shared.postNote(token: accessToken)
+                            await tRPCService.shared.splitTaskAI(taskId: "ebc155b6-b3b3-4d66-9da5-f62eac17ab66", token: accessToken)
                         }
                     }
                     Button("AuthTest") {

@@ -10,9 +10,6 @@ class CardViewModel: ObservableObject {
     @Published var generationProgress: String = "" // 生成プロセスの進行状況を表示
 
     private var cards: [Card] = []
-    private let trpcService = tRPCService.shared
-    private let mockDataProvider = MockDataProvider.shared
-    private let appConfig = AppConfiguration.shared
     private let imageGenerator = ImageGeneratorService.shared
     private let emojiSelector = EmojiSelectorService.shared
     private let keychainHelper = KeychainHelper.shared
@@ -30,20 +27,29 @@ class CardViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
 
-        do {
-            
-        } catch {
-            errorMessage = "Failed to load cards: \(error.localizedDescription)"
+        guard let accessToken = keychainHelper.getAccessToken() else {
+            errorMessage = "アクセストークンが見つかりません。ログインしてください。"
+            isLoading = false
+            return
         }
+
+        let fetchedCards = await tRPCService.shared.fetchActiveTasks(token: accessToken)
+        print("📥 APIから\(fetchedCards.count)件のタスクを取得しました")
+
+        // 画像生成
+        await generateImagesForCards(fetchedCards)
+
+        cards = fetchedCards
+        currentCard = cards.first
 
         isLoading = false
     }
 
     /// APIから取得したカードに画像を生成する
     @MainActor
-    private func generateImagesForCards() async {
-        for i in 0..<cards.count {
-            let card = cards[i]
+    private func generateImagesForCards(_ cardsToUpdate: [Card]) async {
+        for i in 0..<cardsToUpdate.count {
+            let card = cardsToUpdate[i]
             // 画像URLが空または存在しない場合は生成
             if card.imageURL.isEmpty {
                 let taskName = card.displayName
@@ -73,13 +79,50 @@ class CardViewModel: ObservableObject {
     @MainActor
     func handleSwipe(direction: SwipeDirection) {
         guard let card = currentCard else { return }
+        guard let accessToken = keychainHelper.getAccessToken() else {
+            errorMessage = "アクセストークンが見つかりません。ログインしてください。"
+            return
+        }
 
         Task { @MainActor in
-            do {
-                
-            } catch {
-                errorMessage = "アクションの実行に失敗しました: \(error.localizedDescription)"
-                print("❌ アクション失敗: \(error)")
+            switch direction {
+            case .delete:
+                // タスクを削除
+                await tRPCService.shared.deleteTask(taskId: card.id, token: accessToken)
+                print("🗑️ タスク削除: \(card.id)")
+                moveToNextCard()
+
+            case .like:
+                // タスクを完了に更新
+                await tRPCService.shared.statusUpdateTask(taskId: card.id, status: .completed, token: accessToken)
+                print("❤️ Like: \(card.id)")
+                moveToNextCard()
+
+            case .cut:
+                // AIでタスクを分割
+                let result = await tRPCService.shared.splitTaskAI(taskId: card.id, token: accessToken)
+                print("✂️ [API Mode] タスク分割成功:")
+                print(result)
+
+                // 現在のカードを削除
+                moveToNextCard()
+
+                // 分割されたタスクを先頭に挿入
+                for re in result.reversed() {
+                    let emoji = emojiSelector.selectEmojiWithPriority(for: re.title ?? "")
+                    if let imagePath = await imageGenerator.generateTaskImage(taskText: re.title ?? "", emoji: emoji) {
+                        let newCard = Card(
+                            id: re.id,
+                            imageURL: imagePath,
+                            taskText: re.title ?? "",
+                            emoji: emoji
+                        )
+                        cards.insert(newCard, at: 0)
+                    }
+                }
+
+                // 新しい現在のカードを設定
+                currentCard = cards.first
             }
         }
     }
@@ -143,11 +186,32 @@ class CardViewModel: ObservableObject {
 
         // ステップ3: バックエンドにタスクを作成
         generationProgress = "タスクを保存中..."
-        do {
-        } catch {
-            errorMessage = "タスクの保存に失敗しました: \(error.localizedDescription)"
-            print("❌ タスク保存失敗: \(error)")
+        guard let accessToken = keychainHelper.getAccessToken() else {
+            errorMessage = "アクセストークンが見つかりません。ログインしてください。"
+            isGeneratingCard = false
+            generationProgress = ""
+            return
         }
+
+        guard let taskId = await tRPCService.shared.projectCreateTask(projectName: taskText, TaskName: taskText, token: accessToken) else {
+            errorMessage = "タスクの作成に失敗しました。"
+            isGeneratingCard = false
+            generationProgress = ""
+            return
+        }
+
+        // ステップ4: 作成したタスクをカードスタックに追加
+        let newCard = Card(
+            id: taskId,
+            imageURL: imagePath,
+            taskText: taskText,
+            emoji: emoji,
+            title: taskText,
+            name: taskText
+        )
+        cards.insert(newCard, at: 0)
+        currentCard = cards.first
+        print("✅ タスクカード追加成功: \(taskText)")
 
         isGeneratingCard = false
         generationProgress = ""

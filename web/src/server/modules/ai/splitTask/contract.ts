@@ -5,7 +5,7 @@ import { TaskId, UserId } from "@/server/types/brand";
 import { SplitTaskResultDTO } from "../_dto";
 
 export const request = z.object({
-  task_id: z.string(),
+  taskId: z.string(),
 });
 
 export type Request = z.infer<typeof request>;

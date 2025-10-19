@@ -70,7 +70,7 @@ export const execute = async (
   const parsed = inputSchema.safeParse({
     ...cmd,
     userId: deps.authUserId,
-    taskId: cmd.task_id,
+    taskId: cmd.taskId,
   });
   if (!parsed.success) {
     return Err(Errors.validation("INVALID_INPUT", parsed.error.issues));
@@ -84,7 +84,7 @@ export const execute = async (
   const task = taskResult.data;
 
   if (task.userId !== userId) {
-    return Err(Errors.auth());
+    return Err(Errors.permission("FORBIDDEN"));
   }
 
   const projectResult = await findProjectByTaskId(deps.db, taskId);
