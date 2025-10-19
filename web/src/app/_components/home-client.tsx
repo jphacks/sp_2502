@@ -5,13 +5,16 @@ import { useState } from "react";
 import { FaAngleDown } from "react-icons/fa6";
 
 import CardList from "@/app/_components/cards-list";
-import { getSession } from "@/server/auth/helpers";
 import type { TaskDTO } from "@/server/modules/task/_dto";
 import { api } from "@/trpc/react";
 
-const session = await getSession();
+import type { SessionData } from "@auth0/nextjs-auth0/types";
 
-export const HomeClient = () => {
+type HomeClientProps = {
+  session: SessionData | null;
+};
+
+export const HomeClient = ({ session }: HomeClientProps) => {
   const [parentTasks, setParentTasks] = useState<TaskDTO[] | null>(null);
   const [taskSelect, setTaskSelect] = useState<TaskDTO | null>(null);
 
@@ -120,7 +123,7 @@ export const HomeClient = () => {
             py={2}
             bg="rgba(0,0,0,0.2)"
             borderRadius="8px">
-            {session?.user.n ? (
+            {session?.user ? (
               <HStack gap={3} fontSize="14px" color="white">
                 <Text opacity={0.8}>
                   {session.user.name ?? session.user.email ?? "ユーザー"}

@@ -1,11 +1,11 @@
 {
-  "id": "c0bd9f39-0977-40b6-bb23-985b630a2161",
+  "id": "c39bdbb6-1909-4abd-bf6c-8257d2e93839",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.database_note": {
-      "name": "database_note",
+    "public.database_project": {
+      "name": "database_project",
       "schema": "",
       "columns": {
         "id": {
@@ -20,26 +20,24 @@
           "primaryKey": false,
           "notNull": true
         },
-        "title": {
-          "name": "title",
+        "name": {
+          "name": "name",
           "type": "varchar(255)",
           "primaryKey": false,
-          "notNull": true,
-          "default": "''"
+          "notNull": true
         },
-        "content": {
-          "name": "content",
-          "type": "text",
+        "rootTaskId": {
+          "name": "rootTaskId",
+          "type": "varchar(255)",
           "primaryKey": false,
-          "notNull": true,
-          "default": "''"
+          "notNull": false
         },
         "createdAt": {
           "name": "createdAt",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
-          "default": "'2025-10-18T11:42:13.377Z'"
+          "default": "now()"
         },
         "updatedAt": {
           "name": "updatedAt",
@@ -50,12 +48,186 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "database_note_userId_database_user_id_fk": {
-          "name": "database_note_userId_database_user_id_fk",
-          "tableFrom": "database_note",
+        "database_project_userId_database_user_id_fk": {
+          "name": "database_project_userId_database_user_id_fk",
+          "tableFrom": "database_project",
           "tableTo": "database_user",
           "columnsFrom": [
             "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.database_task_children": {
+      "name": "database_task_children",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "varchar(255)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "taskId": {
+          "name": "taskId",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "childId": {
+          "name": "childId",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "database_task_children_taskId_database_task_id_fk": {
+          "name": "database_task_children_taskId_database_task_id_fk",
+          "tableFrom": "database_task_children",
+          "tableTo": "database_task",
+          "columnsFrom": [
+            "taskId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "database_task_children_childId_database_task_id_fk": {
+          "name": "database_task_children_childId_database_task_id_fk",
+          "tableFrom": "database_task_children",
+          "tableTo": "database_task",
+          "columnsFrom": [
+            "childId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.database_task": {
+      "name": "database_task",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "varchar(255)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "userId": {
+          "name": "userId",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "projectId": {
+          "name": "projectId",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date": {
+          "name": "date",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "task_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'unprocessed'"
+        },
+        "priority": {
+          "name": "priority",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "parentId": {
+          "name": "parentId",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "database_task_userId_database_user_id_fk": {
+          "name": "database_task_userId_database_user_id_fk",
+          "tableFrom": "database_task",
+          "tableTo": "database_user",
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "database_task_projectId_database_project_id_fk": {
+          "name": "database_task_projectId_database_project_id_fk",
+          "tableFrom": "database_task",
+          "tableTo": "database_project",
+          "columnsFrom": [
+            "projectId"
           ],
           "columnsTo": [
             "id"
@@ -130,7 +302,18 @@
       "isRLSEnabled": false
     }
   },
-  "enums": {},
+  "enums": {
+    "public.task_status": {
+      "name": "task_status",
+      "schema": "public",
+      "values": [
+        "unprocessed",
+        "active",
+        "completed",
+        "waiting"
+      ]
+    }
+  },
   "schemas": {},
   "sequences": {},
   "roles": {},

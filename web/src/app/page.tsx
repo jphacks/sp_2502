@@ -3,14 +3,10 @@ import Link from "next/link";
 
 import { HomeClient } from "@/app/_components/home-client";
 import { getSession } from "@/server/auth/helpers";
-import { api, HydrateClient } from "@/trpc/server";
+import { HydrateClient } from "@/trpc/server";
 
 export default async function Home() {
   const session = await getSession();
-
-  if (session?.user) {
-    void api.note.list.prefetch({ limit: 50, offset: 0 });
-  }
 
   // 認証失敗時：シンプルなログインボタンを表示
   if (!session?.user) {
@@ -47,7 +43,7 @@ export default async function Home() {
 
   return (
     <HydrateClient>
-      <HomeClient />
+      <HomeClient session={session} />
     </HydrateClient>
   );
 }
