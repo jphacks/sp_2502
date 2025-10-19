@@ -69,46 +69,165 @@ export default function Home() {
   // NOTE: task.selectエンドポイントは未実装のため、モックデータを使用
   const handleSelectTask = async (childTask: TaskDTO) => {
     try {
-      // モックデータ：ルートから選択タスクまでの階層を返す
-      const mockTasks: TaskDTO[] = [
-        {
-          id: "root-task",
-          userId: "user-1",
-          projectId: "project-1",
-          name: "ルートタスク",
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          status: "active" as const,
-          date: null,
-          priority: null,
-          parentId: null,
-        },
-        {
-          id: "grandparent-task",
-          userId: "user-1",
-          projectId: "project-1",
-          name: "祖父タスク",
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          status: "active" as const,
-          date: null,
-          priority: null,
-          parentId: "root-task",
-        },
-        {
-          id: childTask.parentId ?? "parent-1",
-          userId: "user-1",
-          projectId: "project-1",
-          name: "親タスク",
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          status: "active" as const,
-          date: null,
-          priority: null,
-          parentId: "grandparent-task",
-        },
-        childTask,
-      ];
+      // 選択されたタスクに応じた階層データを生成
+      const mockHierarchies: Record<string, TaskDTO[]> = {
+        "task-1": [
+          {
+            id: "root-task",
+            userId: "user-1",
+            projectId: "project-1",
+            name: "ルートタスク",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            status: "active" as const,
+            date: null,
+            priority: null,
+            parentId: null,
+          },
+          {
+            id: "great-grandparent-1",
+            userId: "user-1",
+            projectId: "project-1",
+            name: "カード1の曽祖父タスク",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            status: "active" as const,
+            date: null,
+            priority: null,
+            parentId: "root-task",
+          },
+          {
+            id: "grandparent-1",
+            userId: "user-1",
+            projectId: "project-1",
+            name: "カード1の祖父タスク",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            status: "active" as const,
+            date: null,
+            priority: null,
+            parentId: "great-grandparent-1",
+          },
+          {
+            id: "parent-1",
+            userId: "user-1",
+            projectId: "project-1",
+            name: "カード1の親タスク",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            status: "active" as const,
+            date: null,
+            priority: null,
+            parentId: "grandparent-1",
+          },
+          childTask,
+        ],
+        "task-2": [
+          {
+            id: "root-task",
+            userId: "user-1",
+            projectId: "project-1",
+            name: "ルートタスク",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            status: "active" as const,
+            date: null,
+            priority: null,
+            parentId: null,
+          },
+          {
+            id: "great-grandparent-1",
+            userId: "user-1",
+            projectId: "project-1",
+            name: "カード2の曽祖父タスク",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            status: "active" as const,
+            date: null,
+            priority: null,
+            parentId: "root-task",
+          },
+          {
+            id: "grandparent-1",
+            userId: "user-1",
+            projectId: "project-1",
+            name: "カード2の祖父タスク",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            status: "active" as const,
+            date: null,
+            priority: null,
+            parentId: "great-grandparent-1",
+          },
+          {
+            id: "parent-1",
+            userId: "user-1",
+            projectId: "project-1",
+            name: "カード2の親タスク",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            status: "active" as const,
+            date: null,
+            priority: null,
+            parentId: "grandparent-1",
+          },
+          childTask,
+        ],
+        "task-3": [
+          {
+            id: "root-task",
+            userId: "user-1",
+            projectId: "project-1",
+            name: "ルートタスク",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            status: "active" as const,
+            date: null,
+            priority: null,
+            parentId: null,
+          },
+          {
+            id: "great-grandparent-2",
+            userId: "user-1",
+            projectId: "project-1",
+            name: "カード3の曽祖父タスク",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            status: "active" as const,
+            date: null,
+            priority: null,
+            parentId: "root-task",
+          },
+          {
+            id: "grandparent-2",
+            userId: "user-1",
+            projectId: "project-1",
+            name: "カード3の祖父タスク",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            status: "active" as const,
+            date: null,
+            priority: null,
+            parentId: "great-grandparent-2",
+          },
+          {
+            id: "parent-2",
+            userId: "user-1",
+            projectId: "project-1",
+            name: "カード3の親タスク",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            status: "active" as const,
+            date: null,
+            priority: null,
+            parentId: "grandparent-2",
+          },
+          childTask,
+        ],
+      };
+
+      // 選択されたタスクIDに応じた階層を取得
+      const mockTasks = mockHierarchies[childTask.id] ?? [];
 
       if (mockTasks.length < 2) {
         // 親タスクがない場合（ルートタスク自身の場合）
@@ -120,11 +239,11 @@ export default function Home() {
         return;
       }
 
-      // tasks = [rootTask, ..., grandparent, parentTask, childTask]
+      // tasks = [rootTask, great-grandparent, grandparent, parentTask, childTask]
       // 親タスク = 後ろから2番目
       const parentTask = mockTasks[mockTasks.length - 2];
-      // 前提タスク = ルートから親の親まで
-      const prerequisiteTasks = mockTasks.slice(0, -2);
+      // 前提タスク = ルートから親の親まで（逆順で表示：親に近い順）
+      const prerequisiteTasks = mockTasks.slice(0, -2).reverse();
 
       if (!parentTask) {
         return;
