@@ -1,10 +1,10 @@
 import { Auth0Provider } from "@auth0/nextjs-auth0/client";
-import { Geist } from "next/font/google";
 
 import { Provider } from "@/components/ui/provider";
 import { TRPCReactProvider } from "@/trpc/react";
 
 import type { Metadata } from "next";
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Create T3 App",
@@ -12,16 +12,11 @@ export const metadata: Metadata = {
   icons: [{ rel: "icon", url: "/favicon.ico" }],
 };
 
-const geist = Geist({
-  subsets: ["latin"],
-  variable: "--font-geist-sans",
-});
-
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ja" suppressHydrationWarning className={`${geist.variable}`}>
+    <html lang="ja" suppressHydrationWarning>
       <body className="light">
         <Auth0Provider>
           <Provider>
