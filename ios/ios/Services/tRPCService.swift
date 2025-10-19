@@ -6,111 +6,263 @@
 //
 import Foundation
 
+enum tRPCError: Error {
+    case invalidURL
+    case invalidResponse
+    case networkError(Error)
+    case decodingError(Error)
+    case serverError(statusCode: Int)
+}
+
 final class tRPCService {
+    private let baseURL = "http://localhost:3304"
+    // 本番環境用（コメントアウト）: "https://sp-2502.vercel.app/api/trpc"
+
     static let shared = tRPCService()
-    private init() {}
 
-    // 例: モデルは各自で定義
-    // struct Note: Decodable { ... }
+    private let client: TRPCClient
+    private init() {
+        client = TRPCClient(baseURL: URL(string: baseURL)!, basePath: "api/trpc")
+}
 
-    private let decoder: JSONDecoder = {
-        let d = JSONDecoder()
-        d.dateDecodingStrategy = .iso8601
-        return d
-    }()
+    // [GET] /note.list
+    func fetchList(token: String) async {
+        do {
+            let list = try await client.get(
+                endpoint: "note.list",
+                data: .obj([:]),
+                headers: ["Authorization": "Bearer \(token)"]
+            )
 
-    // MARK: - SuperJSON → plain JSON 変換
-    func superJSONToPlainJSONData(_ data: Data, unwrapSingleArray: Bool = true) throws -> Data {
-        let obj = try JSONSerialization.jsonObject(with: data, options: [.fragmentsAllowed])
-        let unwrapped = unwrap(any: obj)
-        let normalized = unwrapSingleArray ? flattenSingleArrayObject(unwrapped) : unwrapped
-        guard JSONSerialization.isValidJSONObject(normalized) else {
-            return data
-        }
-        return try JSONSerialization.data(withJSONObject: normalized, options: [])
-    }
-
-    func decodeFromSuperJSON<T: Decodable>(_ type: T.Type, from data: Data, unwrapSingleArray: Bool = true) throws -> T {
-        let plain = try superJSONToPlainJSONData(data, unwrapSingleArray: unwrapSingleArray)
-        return try decoder.decode(T.self, from: plain)
-    }
-
-    // MARK: - 内部ユーティリティ
-    private func unwrap(any: Any) -> Any {
-        if let arr = any as? [Any] {
-            let mapped = arr.map { unwrap(any: $0) }
-
-            if mapped.allSatisfy({ $0 is [Any] }) {
-                return mapped.flatMap { $0 as! [Any] }
-            }
-            return mapped
-        }
-
-        if let dict = any as? [String: Any] {
-            if
-                let result = dict["result"] as? [String: Any],
-                let data = result["data"] as? [String: Any],
-                let json = data["json"]
-            {
-                return unwrap(any: json)
+            guard let notes = list["notes"]?.array else {
+                // notesキーがない or 型が配列でない
+                return
             }
 
-            if let json = dict["json"] {
-                return unwrap(any: json)
+            for note in notes {
+                let id      = note["id"]?.asString() ?? ""
+                let title   = note["title"]?.asString() ?? ""
+                let content = note["content"]?.asString() ?? ""
+
+                print(id, title, content)
+            }
+        } catch {
+            print("リクエストに失敗")
+            print(error.localizedDescription)
+        }
+    }
+
+    func postNote(token: String) async {
+        do {
+            let note = try await client.post(
+                endpoint: "note.create",
+                data: .obj([
+                    "title": .s("Swift x tRPC"),
+                    "content": .s("48時間で作る Swift x tRPCの通信")
+                ]),
+                headers: ["Authorization": "Bearer \(token)"]
+            )
+            print("リクエストに成功")
+            print(note)
+        } catch {
+            print("リクエストに失敗")
+            print(error.localizedDescription)
+        }
+    }
+
+    func deleteTask(taskId: String, token: String) async {
+        do {
+            _ = try await client.post(
+                endpoint: "task.delete",
+                data: .obj(["taskId": .s(taskId)]),
+                headers: ["Authorization": "Bearer \(token)"]
+            )
+        } catch {
+            print("❌タスクデータの削除に失敗")
+            print(error.localizedDescription)
+        }
+    }
+
+    func statusUpdateTask(taskId: String, status: TaskStatus, token: String) async {
+        do {
+            _ = try await client.post(
+                endpoint: "task.statusUpdate",
+                data: .obj([
+                    "taskId": .s(taskId),
+                    "status": .s(status.rawValue)
+                ]),
+                headers: ["Authorization": "Bearer \(token)"]
+            )
+        } catch {
+            print("❌タスクステータスの更新に失敗")
+            print(error.localizedDescription)
+        }
+    }
+    
+    func splitTaskAI(taskId: String, token: String) async -> [Card] {
+        do {
+            let tasks = try await client.post(
+                endpoint: "ai.splitTask",
+                data: .obj([
+                    "taskId": .s(taskId)
+                ]),
+                headers: ["Authorization": "Bearer \(token)"]
+            )
+            
+            print("リクエスト成功")
+            print(tasks)
+
+            let card1: Card = Card(
+                id: tasks.at("first_task_id")?.asString() ?? "",
+                imageURL: "",
+                title: tasks.at("first_task_name")?.asString() ?? "",
+                description: ""
+            )
+            
+            let card2: Card = Card(
+                id: tasks.at("second_task_id")?.asString() ?? "",
+                imageURL: "",
+                title: tasks.at("second_task_name")?.asString() ?? "",
+                description: ""
+            )
+            
+            return [card1, card2]
+        } catch {
+            print("❌タスク分割AIの呼び出しに失敗")
+            print(error.localizedDescription)
+            return []
+        }
+    }
+    
+    func projectCreateTask(projectName: String, TaskName: String, token: String) async -> Card? {
+        do {
+            let result = try await client.post(
+                endpoint: "task.projectCreate",
+                data: .obj([
+                    "projectName": .s(projectName),
+                    "taskName": .s(TaskName)
+                ]),
+                headers: ["Authorization": "Bearer \(token)"]
+            )
+
+            // TaskDTOをCardに変換
+            let id = result.at("id")?.asString() ?? ""
+            let name = result.at("name")?.asString() ?? ""
+            let userId = result.at("userId")?.asString()
+            let projectId = result.at("projectId")?.asString()
+            let statusStr = result.at("status")?.asString() ?? "unprocessed"
+            let status = TaskStatus(rawValue: statusStr) ?? .unprocessed
+            let priority = result.at("priority")?.asString()
+            let parentId = result.at("parentId")?.asString()
+
+            // 日付の処理
+            var createdAt: Date?
+            var updatedAt: Date?
+            var date: Date?
+
+            if let createdAtStr = result.at("createdAt")?.asString() {
+                createdAt = ISO8601DateFormatter().date(from: createdAtStr)
+            }
+            if let updatedAtStr = result.at("updatedAt")?.asString() {
+                updatedAt = ISO8601DateFormatter().date(from: updatedAtStr)
+            }
+            if let dateStr = result.at("date")?.asString() {
+                date = ISO8601DateFormatter().date(from: dateStr)
             }
 
-            var out: [String: Any] = [:]
-            for (k, v) in dict { out[k] = unwrap(any: v) }
-            return out
+            let card = Card(
+                id: id,
+                imageURL: "", // 画像は後で生成
+                title: name,
+                description: nil,
+                isLocalImage: false,
+                userId: userId,
+                projectId: projectId,
+                name: name,
+                date: date,
+                status: status,
+                priority: priority,
+                parentId: parentId,
+                createdAt: createdAt,
+                updatedAt: updatedAt
+            )
+
+            return card
+        } catch {
+            print("❌プロジェクト作成とタスク追加に失敗")
+            print(error.localizedDescription)
+            return nil
         }
-
-        return any
     }
 
-    private func flattenSingleArrayObject(_ any: Any) -> Any {
-        if let dict = any as? [String: Any], dict.count == 1, let only = dict.values.first as? [Any] {
-            return only
-        }
-        return any
-    }
+    func fetchActiveTasks(token: String) async -> [Card] {
+        do {
+            let result = try await client.get(
+                endpoint: "task.activeList",
+                data: .obj(["order": .s("desc")]),
+                headers: ["Authorization": "Bearer \(token)"]
+            )
+            
+            print("✅アクティブタスクの取得に成功")
+            print(result)
 
-    // MARK: - fetch使用例
-    struct Note: Decodable {
-        let id: String
-        let userId: String
-        let title: String
-        let content: String?
-        let createdAt: Date
-        let updatedAt: Date
-    }
-
-    func fetchNotes(accessToken: String) {
-        var comp = URLComponents(string: "https://sp-2502.vercel.app/api/trpc/note.list")!
-        let inputObj: [String: Any] = ["json": [:]]
-        let inputData = try! JSONSerialization.data(withJSONObject: inputObj)
-        comp.queryItems = [URLQueryItem(name: "input", value: String(data: inputData, encoding: .utf8)! )]
-
-        var req = URLRequest(url: comp.url!)
-        req.httpMethod = "GET"
-        req.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
-        req.setValue("application/json", forHTTPHeaderField: "Accept")
-
-        URLSession.shared.dataTask(with: req) { data, _, err in
-            if let err = err { print("network error:", err); return }
-            guard let data = data else { print("no data"); return }
-
-            // 1) plain JSON Data を取得（notes配列にフラット化）
-            do {
-                let plain = try self.superJSONToPlainJSONData(data, unwrapSingleArray: true)
-                if let raw = String(data: plain, encoding: .utf8) { print("plain:", raw) }
-
-                // 2) あとは任意の型で普通にデコード
-                let notes = try self.decoder.decode([Note].self, from: plain)
-                // 例
-                print(notes[0].id)
-            } catch {
-                print("transform failed:", error)
+            guard let tasks = result.at("tasks")?.array else {
+                print("❌タスクリストの取得に失敗: tasks配列がありません")
+                return []
             }
-        }.resume()
+            
+            print("取得したタスク数: \(tasks.count)")
+
+            var cards: [Card] = []
+            for task in tasks {
+                let id = task.at("id")?.asString() ?? ""
+                let name = task.at("name")?.asString() ?? ""
+                let userId = task.at("userId")?.asString()
+                let projectId = task.at("projectId")?.asString()
+                let statusStr = task.at("status")?.asString() ?? "unprocessed"
+                let status = TaskStatus(rawValue: statusStr) ?? .unprocessed
+                let priority = task.at("priority")?.asString()
+                let parentId = task.at("parentId")?.asString()
+
+                // 日付の処理（SuperJSONの日付フォーマットに対応）
+                var createdAt: Date?
+                var updatedAt: Date?
+                var date: Date?
+
+                if let createdAtStr = task.at("createdAt")?.asString() {
+                    createdAt = ISO8601DateFormatter().date(from: createdAtStr)
+                }
+                if let updatedAtStr = task.at("updatedAt")?.asString() {
+                    updatedAt = ISO8601DateFormatter().date(from: updatedAtStr)
+                }
+                if let dateStr = task.at("date")?.asString() {
+                    date = ISO8601DateFormatter().date(from: dateStr)
+                }
+
+                let card = Card(
+                    id: id,
+                    imageURL: "",
+                    title: name,
+                    description: nil,
+                    isLocalImage: false,
+                    userId: userId,
+                    projectId: projectId,
+                    name: name,
+                    date: date,
+                    status: status,
+                    priority: priority,
+                    parentId: parentId,
+                    createdAt: createdAt,
+                    updatedAt: updatedAt
+                )
+                cards.append(card)
+            }
+
+            return cards
+        } catch {
+            print("❌アクティブタスクの取得に失敗")
+            print(error.localizedDescription)
+            return []
+        }
     }
 }

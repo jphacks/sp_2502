@@ -18,8 +18,8 @@ class AppConfiguration {
     // モードの切り替え
     // ここを編集してモードを変更してください
     var currentMode: AppMode {
-        return .test  // テストモード（ローカル画像を使用）
-        // return .api
+        // return .test  // テストモード（ローカル画像を使用）
+        return .api
     }
 
     var isTestMode: Bool {

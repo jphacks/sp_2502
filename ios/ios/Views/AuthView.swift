@@ -11,8 +11,17 @@ struct AuthView: View {
             if isAuthenticated {
                 VStack {
                     ContentView()
-                    Button("Fetch Notes") {
-                        tRPCService.shared.fetchNotes(accessToken: accessToken)
+                    Button("PostTest") {
+                        Task {
+                            print("POST")
+                            await tRPCService.shared.splitTaskAI(taskId: "ebc155b6-b3b3-4d66-9da5-f62eac17ab66", token: accessToken)
+                        }
+                    }
+                    Button("AuthTest") {
+                        Task {
+                            print("リクエスト送ります")
+                            await tRPCService.shared.fetchList(token: accessToken)
+                        }
                     }
                     Button("Logout", action: self.logout)
                 }

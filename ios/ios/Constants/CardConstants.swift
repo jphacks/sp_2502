@@ -157,19 +157,19 @@ enum CardConstants {
 
         static func config(for direction: SwipeDirection) -> DirectionConfig {
             switch direction {
-            case .up:
+            case .delete:
                 return DirectionConfig(
                     color: .red,
                     icon: "trash",
                     text: "Delete"
                 )
-            case .right:
+            case .like:
                 return DirectionConfig(
                     color: .green,
                     icon: "hand.thumbsup.fill",
                     text: "Like"
                 )
-            case .cut, .left:
+            case .cut:
                 return DirectionConfig(
                     color: Color(red: 1.0, green: 0.6, blue: 0.4),
                     icon: "scissors",

@@ -18,25 +18,39 @@ struct ContentView: View {
                 Color(red: 0x92/255.0, green: 0, blue: 0)
                     .ignoresSafeArea()
 
-                // 背景装飾：左上のカード
-                decorativeCard
-                    .frame(width: 100, height: 140)
+                // 背景装飾：左上のchoco画像
+                Image("choco")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 90, height: 90)
                     .rotationEffect(.degrees(-25))
                     .position(x: 60, y: 80)
-                    .opacity(0.6)
+                    .opacity(0.8)
 
-                // 背景装飾：右下のカード
+                // 背景装飾：左上のカード（chocoと被らないように位置調整）
                 decorativeCard
-                    .frame(width: 120, height: 160)
-                    .rotationEffect(.degrees(15))
-                    .position(x: geometry.size.width - 60, y: geometry.size.height - 100)
+                    .frame(width: 80, height: 110)
+                    .rotationEffect(.degrees(-25))
+                    .position(x: 60, y: 200)
                     .opacity(0.5)
 
-                if viewModel.isLoading {
-                    ProgressView("Loading cards...")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                } else if let errorMessage = viewModel.errorMessage {
+                // 背景装飾：右下のchoco画像
+                Image("choco")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 100, height: 100)
+                    .rotationEffect(.degrees(15))
+                    .position(x: geometry.size.width - 80, y: geometry.size.height - 150)
+                    .opacity(0.7)
+
+                // 背景装飾：右下のカード（chocoと被らないように位置調整）
+                decorativeCard
+                    .frame(width: 90, height: 120)
+                    .rotationEffect(.degrees(15))
+                    .position(x: geometry.size.width - 40, y: geometry.size.height - 60)
+                    .opacity(0.4)
+
+                if let errorMessage = viewModel.errorMessage {
                     VStack(spacing: 20) {
                         Image(systemName: "exclamationmark.triangle")
                             .font(.system(size: 60))
@@ -46,12 +60,6 @@ struct ContentView: View {
                             .foregroundColor(.white)
                             .multilineTextAlignment(.center)
                             .padding()
-                        Button("Retry") {
-                            Task {
-                                await viewModel.loadCards()
-                            }
-                        }
-                        .buttonStyle(.borderedProminent)
                     }
                 } else if let card = viewModel.currentCard {
                     // カードスタック表示（中央に大きく配置）
@@ -71,7 +79,7 @@ struct ContentView: View {
                             Spacer()
                             actionButton(
                                 icon: "trash",
-                                color: .red,
+                                color: .purple,
                                 action: { viewModel.handleDelete() }
                             )
                             .padding(.top, 20)
@@ -110,13 +118,18 @@ struct ContentView: View {
                         }
                     }
                 } else {
-                    VStack(spacing: 20) {
-                        Image(systemName: "photo.on.rectangle.angled")
-                            .font(.system(size: 60))
+                    VStack(spacing: 30) {
+                        Image(systemName: "mic.fill")
+                            .font(.system(size: 80))
                             .foregroundColor(.white)
-                        Text("No more cards")
-                            .font(.headline)
+                        Text("マイク入力でタスクを追加")
+                            .font(.system(size: 24, weight: .semibold))
                             .foregroundColor(.white)
+                            .multilineTextAlignment(.center)
+                        Text("下部のマイクボタンを長押しして\n音声でタスクを入力してください")
+                            .font(.system(size: 16))
+                            .foregroundColor(.white.opacity(0.8))
+                            .multilineTextAlignment(.center)
                     }
                 }
 
@@ -157,8 +170,6 @@ struct ContentView: View {
             }
         }
         .task {
-            await viewModel.loadCards()
-
             speechViewModel.onRecognitionCompleted = { recognizedText in
                 Task { @MainActor in
                     await viewModel.addTaskCard(taskText: recognizedText)
@@ -253,7 +264,7 @@ struct ContentView: View {
                 .font(.system(size: 28))
                 .foregroundColor(.white)
                 .frame(width: 70, height: 70)
-                .background(speechViewModel.isRecording ? Color.red : Color.blue)
+                .background(speechViewModel.isRecording ? Color(red: 0.5, green: 0.35, blue: 0.3) : Color(red: 0.4, green: 0.3, blue: 0.25))
                 .clipShape(Circle())
                 .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
         }
@@ -330,13 +341,11 @@ struct ContentView: View {
     // スワイプ方向に応じたアイコン
     private func iconForDirection(_ direction: SwipeDirection) -> String {
         switch direction {
-        case .up:
+        case .delete:
             return "trash"
-        case .right:
+        case .like:
             return "hand.thumbsup.fill"
         case .cut:
-            return "scissors"
-        case .left:
             return "scissors"
         }
     }
@@ -344,13 +353,11 @@ struct ContentView: View {
     // スワイプ方向に応じたテキスト
     private func textForDirection(_ direction: SwipeDirection) -> String {
         switch direction {
-        case .up:
+        case .delete:
             return "Delete"
-        case .right:
+        case .like:
             return "Like"
         case .cut:
-            return "Cut"
-        case .left:
             return "Cut"
         }
     }
@@ -358,13 +365,11 @@ struct ContentView: View {
     // スワイプ方向に応じた色
     private func colorForDirection(_ direction: SwipeDirection) -> Color {
         switch direction {
-        case .up:
-            return .red
-        case .right:
+        case .delete:
+            return .purple
+        case .like:
             return .green
         case .cut:
-            return Color(red: 1.0, green: 0.6, blue: 0.4)
-        case .left:
             return Color(red: 1.0, green: 0.6, blue: 0.4)
         }
     }
