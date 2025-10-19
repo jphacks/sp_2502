@@ -82,6 +82,8 @@
 
 #### 6. AIコーディングのためのガイドライン
 
+web/.claude/hooks に web のコード品質を保つための
+
 #### 7. Chakra UI + React での UI 実装
 
 2日間という短い期間で実装できるように、 CSS フレームワークである Chakra UI v3 を使用しました。
@@ -92,32 +94,93 @@
 
 #### API・データ
 
-- Open AI
+- OpenAI API (GPT-4.1-mini)
+- Auth0
 
 #### フレームワーク・ライブラリ・モジュール
 
-- t3Stack
-  - Next.js
-  - tRPC
-- Swift UI
+**iOS (フロントエンド)**
+- Swift 5.0 + SwiftUI
+  - MVVM + Services アーキテクチャ
+- Speech Framework
+  - 音声認識機能
+- Auth0.swift
+  - ネイティブ認証
+
+**Web (フロントエンド + バックエンド)**
+- Next.js 15 (App Router)
+  - React 19
+  - TypeScript 5.8
+- tRPC 11
+  - 型安全なAPI通信
+  - SuperJSON による Date/Map/Set の自動変換
+- Chakra UI v3
+  - モダンなUI コンポーネント
+  - レスポンシブデザイン
+- Drizzle ORM
+  - 型安全なデータベース操作
+  - PostgreSQL 統合
+- @auth0/nextjs-auth0 v4
+  - Next.js 統合認証
+
+#### インフラ・デプロイ
+
+- Docker
+  - PostgreSQL コンテナ
+  - 開発環境の統一
+- Vercel
+  - Web アプリケーションのホスティング
+  - 継続的デプロイメント
 
 #### デバイス
 
-- iPhone
-- PC
+- iPhone (iOS 18.0+)
+  - カードスワイプUI
+  - 音声入力
+  - AI画像生成
+- PC (Web ブラウザ)
+  - タスク管理画面
+  - 詳細なタスク表示
 
 ### 独自技術
 
-#### タスク分割 AI
+#### 1. タスク分割 AI
 
 ユーザーが分割したい大きいタスクを OpenAI の API を使用し、前半部分のタスクと後半部分のタスクの 2 つに分割する機能を実現しました。
 また、ユーザーが分割したいタスクの他にそのタスクが所属するタスクグループを生成 AI に渡すことで、分割をより正確にし、タスクが重複しないように設計しました。
 モデルは性能とコストの観点、またシステムプロンプトを遵守しやすい理由から ChatGPT4.1-mini を使用しています。
 上記の 2 つのアプローチによりタスクが重複する可能性と無関係のタスクが作成されることを極限まで減らしています。
 
+#### 2. iOS と Web のクロスプラットフォーム連携
+
+tRPC + SuperJSON を使用し、iOS (Swift) と Web (TypeScript) 間で型安全な通信を実現しました。
+iOS 側では SwiftUI によるネイティブなカードスワイプ UI を実装し、Web 側では Chakra UI による快適なタスク管理画面を提供しています。
+両プラットフォーム間でリアルタイムにデータが同期され、「何もしたくない時間」のスマートフォンでのタスク分割と、PC での本格的な作業がシームレスに連携します。
+
+#### 3. 4層アーキテクチャによる堅牢な設計
+
+Web バックエンドでは Endpoint → Service → Repository → DTO の 4 層アーキテクチャを採用し、関心の分離を実現しました。
+Result<T, AppError> パターンによる Go 言語ライクなエラーハンドリングと、Brand 型による型安全な ID 管理により、開発効率と品質を両立しています。
+
+#### 4. AI コーディング支援のためのガイドライン設計
+
+このプロジェクトでは、Claude Code による開発を前提とした詳細なガイドライン (CLAUDE.md) を作成しました。
+プロジェクト全体のアーキテクチャ、API 仕様、開発フロー、コーディング規約などを体系的にドキュメント化し、AI との協調開発を効率化しています。
+また、Claude Code Hooks による自動品質チェックと、usecase-maker Agent による API エンドポイントの自動生成により、開発速度を大幅に向上させました。
+
 #### ハッカソンで開発した独自機能・技術
 
-- カードのフリック操作
-- iOS と
-- [sp_2502/CLAUDE.md at main · jphacks/sp_2502 · GitHub](https://github.com/jphacks/sp_2502/blob/main/CLAUDE.md)
-- [sp_2502/web/.claude at main · jphacks/sp_2502 · GitHub](https://github.com/jphacks/sp_2502/tree/main/web/.claude)
+- カードのフリック操作 (iOS SwiftUI)
+- iOS アプリと Web バックエンドの tRPC 連携
+- 音声入力によるタスク作成
+- AI 画像生成統合 (ImagePlayground API)
+- タスク分割 AI システム
+- 4層アーキテクチャの実装
+- Claude Code による開発ワークフロー
+
+#### 開発ドキュメント
+
+- [プロジェクト全体ガイド (CLAUDE.md)](https://github.com/jphacks/sp_2502/blob/main/CLAUDE.md)
+- [Web 詳細ガイド (web/CLAUDE.md)](https://github.com/jphacks/sp_2502/blob/main/web/CLAUDE.md)
+- [iOS 詳細ガイド (ios/CLAUDE.md)](https://github.com/jphacks/sp_2502/blob/main/ios/CLAUDE.md)
+- [Claude Code Hooks 設定](https://github.com/jphacks/sp_2502/tree/main/web/.claude)
