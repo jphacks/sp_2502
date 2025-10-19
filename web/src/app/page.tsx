@@ -6,7 +6,6 @@ import { FaAngleDown } from "react-icons/fa6";
 
 import CardList from "@/app/_components/cards-list";
 import type { TaskDTO } from "@/server/modules/task/_dto";
-import { api } from "@/trpc/react";
 
 export type SelectedItemType = {
   id: string;
@@ -21,27 +20,97 @@ export default function Home() {
     pretask: [],
   });
 
-  // アクティブタスクの一覧を取得
-  const { data: activeTasksData } = api.task.activeList.useQuery({
-    order: "desc",
-  });
-
-  // タスク選択時に親タスク情報を取得
-  // NOTE: task.selectエンドポイントは未実装のため、型アサーションを使用
-  const selectMutation = (api.task as Record<string, unknown>).select as {
-    useMutation: () => {
-      mutateAsync: (input: { task_id: string }) => Promise<TaskDTO[]>;
-    };
+  // アクティブタスクの一覧を取得（モックデータ）
+  // const { data: activeTasksData } = api.task.activeList.useQuery({
+  //   order: "desc",
+  // });
+  const activeTasksData = {
+    tasks: [
+      {
+        id: "task-1",
+        userId: "user-1",
+        projectId: "project-1",
+        name: "カード1",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        status: "active" as const,
+        date: null,
+        priority: null,
+        parentId: "parent-1",
+      },
+      {
+        id: "task-2",
+        userId: "user-1",
+        projectId: "project-1",
+        name: "カード2",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        status: "active" as const,
+        date: null,
+        priority: null,
+        parentId: "parent-1",
+      },
+      {
+        id: "task-3",
+        userId: "user-1",
+        projectId: "project-1",
+        name: "カード3",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        status: "active" as const,
+        date: null,
+        priority: null,
+        parentId: "parent-2",
+      },
+    ],
   };
 
+  // タスク選択時に親タスク情報を取得（モック実装）
+  // NOTE: task.selectエンドポイントは未実装のため、モックデータを使用
   const handleSelectTask = async (childTask: TaskDTO) => {
     try {
-      // task.select APIを呼び出し（rootから順に取得される）
-      const tasks = await selectMutation.useMutation().mutateAsync({
-        task_id: childTask.id,
-      });
+      // モックデータ：ルートから選択タスクまでの階層を返す
+      const mockTasks: TaskDTO[] = [
+        {
+          id: "root-task",
+          userId: "user-1",
+          projectId: "project-1",
+          name: "ルートタスク",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          status: "active" as const,
+          date: null,
+          priority: null,
+          parentId: null,
+        },
+        {
+          id: "grandparent-task",
+          userId: "user-1",
+          projectId: "project-1",
+          name: "祖父タスク",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          status: "active" as const,
+          date: null,
+          priority: null,
+          parentId: "root-task",
+        },
+        {
+          id: childTask.parentId ?? "parent-1",
+          userId: "user-1",
+          projectId: "project-1",
+          name: "親タスク",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          status: "active" as const,
+          date: null,
+          priority: null,
+          parentId: "grandparent-task",
+        },
+        childTask,
+      ];
 
-      if (tasks.length < 2) {
+      if (mockTasks.length < 2) {
         // 親タスクがない場合（ルートタスク自身の場合）
         setSelectedItem({
           id: childTask.id,
@@ -53,9 +122,9 @@ export default function Home() {
 
       // tasks = [rootTask, ..., grandparent, parentTask, childTask]
       // 親タスク = 後ろから2番目
-      const parentTask = tasks[tasks.length - 2];
+      const parentTask = mockTasks[mockTasks.length - 2];
       // 前提タスク = ルートから親の親まで
-      const prerequisiteTasks = tasks.slice(0, -2);
+      const prerequisiteTasks = mockTasks.slice(0, -2);
 
       if (!parentTask) {
         return;
@@ -174,12 +243,7 @@ export default function Home() {
               タスクのカケラ
             </Text>
           </Box>
-          <CardList
-            items={
-              (activeTasksData as { tasks: TaskDTO[] } | undefined)?.tasks ?? []
-            }
-            onSelect={handleSelectTask}
-          />
+          <CardList items={activeTasksData.tasks} onSelect={handleSelectTask} />
         </VStack>
       </Box>
     </HStack>
