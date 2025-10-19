@@ -8,32 +8,46 @@
  */
 
 import { initTRPC, TRPCError } from "@trpc/server";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
 import { getSession } from "@/server/auth/helpers";
 import { db } from "@/server/db";
 
-/**
- * 1. CONTEXT
- *
- * This section defines the "contexts" that are available in the backend API.
- *
- * These allow you to access things when processing a request, like the database, the session, etc.
- *
- * This helper generates the "internals" for a tRPC context. The API handler and RSC clients each
- * wrap this and provides the required context.
- *
- * @see https://trpc.io/docs/server/context
- */
-export const createTRPCContext = async (opts: { headers: Headers }) => {
-  const session = await getSession();
+const issuer = process.env.AUTH0_ISSUER_BASE_URL!; // example.us.auth0.com
+const audience = process.env.AUTH0_AUDIENCE!; // https://api.example.com
+const JWKS = createRemoteJWKSet(new URL(`${issuer}.well-known/jwks.json`));
 
-  return {
-    db,
-    session,
-    ...opts,
-  };
+export const createTRPCContext = async (opts: { headers: Headers }) => {
+  // 1) Cookieセッション（Webから）
+  const session = await getSession();
+  if (session?.user) {
+    return { db, session, ...opts };
+  }
+
+  // 2) Bearer（iOSなどネイティブから）
+  const auth =
+    opts.headers.get("authorization") ?? opts.headers.get("Authorization");
+  if (auth?.startsWith("Bearer ")) {
+    const token = auth.split(" ")[1]!;
+    const { payload } = await jwtVerify(token, JWKS, {
+      issuer,
+      audience, // Auth0のAPI Identifier
+    });
+
+    const user = {
+      sub: String(payload.sub),
+      email: typeof payload.email === "string" ? payload.email : undefined,
+      name: typeof payload.name === "string" ? payload.name : undefined,
+      picture:
+        typeof payload.picture === "string" ? payload.picture : undefined,
+    };
+
+    return { db, session: { user }, ...opts };
+  }
+
+  return { db, session: null, ...opts };
 };
 
 /**
