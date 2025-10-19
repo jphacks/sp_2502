@@ -265,10 +265,10 @@ export default function Home() {
         <VStack h="full" ml="20px">
           <Box
             mt="33px"
-            w="185px"
-            h="185px"
+            w="203px"
+            h="192px"
             border="none"
-            bgImage="url('/images/check.svg')"
+            bgImage="url('/images/check-2.svg')"
           />
           <Box
             mt="22px"
@@ -307,7 +307,7 @@ export default function Home() {
             alignItems="center"
             justifyContent="center">
             <Text fontSize="40px" color="#000000">
-              タスク追加
+              ログアウト
             </Text>
           </Box>
         </VStack>
