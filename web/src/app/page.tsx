@@ -11,8 +11,8 @@ import {
 // import { Global } from "@emotion/react";
 import { Provider } from "@/components/ui/provider"
 
-import { FaAngleDown } from "react-icons/fa6";
-import { auth } from "@/server/auth";
+import { Notes } from "@/app/_components/notes";
+import { getSession } from "@/server/auth/helpers";
 import { api, HydrateClient } from "@/trpc/server";
 import CardList from "@/app/_components/cards-list";
 
@@ -33,6 +33,8 @@ export default async function Home() {
     { id: 2, taskname: "参考文献探し"},
     { id: 3, taskname: "心理学レポート"},
   ];
+  
+  const session = await getSession();
 
   return(
     <Provider>
@@ -71,6 +73,73 @@ export default async function Home() {
             </VStack>
           </Box>
         </HStack>
+      <Box
+        minH="100vh"
+        bgGradient="to-b"
+        gradientFrom="purple.900"
+        gradientTo="gray.900"
+        color="white">
+        {/* ヘッダー */}
+        <Box
+          borderBottomWidth="1px"
+          borderColor="whiteAlpha.200"
+          bg="whiteAlpha.100">
+          <Container maxW="container.xl">
+            <HStack justify="space-between" py={4}>
+              <Heading size="xl" fontWeight="bold">
+                Note App
+              </Heading>
+              {session?.user && (
+                <HStack gap={4}>
+                  <Text color="whiteAlpha.800">
+                    {session.user.name ??
+                      session.user.nickname ??
+                      session.user.email ??
+                      "ユーザー"}
+                  </Text>
+                  <Button
+                    asChild
+                    rounded="lg"
+                    bg="whiteAlpha.200"
+                    fontWeight="semibold"
+                    _hover={{ bg: "whiteAlpha.300" }}>
+                    <Link href="/auth/logout" prefetch={false}>
+                      ログアウト
+                    </Link>
+                  </Button>
+                </HStack>
+              )}
+            </HStack>
+          </Container>
+        </Box>
+
+        {/* メインコンテンツ */}
+        <Container maxW="container.xl" py={12}>
+          {session?.user ? (
+            <Notes />
+          ) : (
+            <Stack align="center" gap={8} py={16}>
+              <Heading size="4xl" fontWeight="bold">
+                ようこそ！
+              </Heading>
+              <Text color="whiteAlpha.800" textAlign="center" textStyle="xl">
+                Noteアプリを使用するにはログインしてください
+              </Text>
+              <Button
+                asChild
+                rounded="lg"
+                bg="whiteAlpha.900"
+                px={8}
+                py={4}
+                fontWeight="semibold"
+                fontSize="lg"
+                _hover={{ bg: "whiteAlpha.300" }}>
+                <Link href="/auth/login">ログイン</Link>
+              </Button>
+            </Stack>
+          )}
+        </Container>
+      </Box>
     </HydrateClient>
     </Provider>
   );

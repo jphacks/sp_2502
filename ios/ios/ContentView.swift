@@ -7,79 +7,163 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var viewModel = CardViewModel()
+    @StateObject private var speechViewModel = SpeechRecognizerViewModel()
+    @State private var swipeProgress: CGFloat = 0
+    @State private var currentSwipeDirection: SwipeDirection?
 
     var body: some View {
-        ZStack {
-            Color(red: 0.95, green: 0.95, blue: 0.95)
-                .ignoresSafeArea()
+        GeometryReader { geometry in
+            ZStack {
+                // 背景色（Figmaデザインに合わせて赤色）
+                Color(red: 0x92/255.0, green: 0, blue: 0)
+                    .ignoresSafeArea()
 
-            if viewModel.isLoading {
-                ProgressView("Loading cards...")
-                    .font(.headline)
-            } else if let errorMessage = viewModel.errorMessage {
-                VStack(spacing: 20) {
-                    Image(systemName: "exclamationmark.triangle")
-                        .font(.system(size: 60))
-                        .foregroundColor(.red)
-                    Text(errorMessage)
+                // 背景装飾：左上のカード
+                decorativeCard
+                    .frame(width: 100, height: 140)
+                    .rotationEffect(.degrees(-25))
+                    .position(x: 60, y: 80)
+                    .opacity(0.6)
+
+                // 背景装飾：右下のカード
+                decorativeCard
+                    .frame(width: 120, height: 160)
+                    .rotationEffect(.degrees(15))
+                    .position(x: geometry.size.width - 60, y: geometry.size.height - 100)
+                    .opacity(0.5)
+
+                if viewModel.isLoading {
+                    ProgressView("Loading cards...")
                         .font(.headline)
-                        .foregroundColor(.red)
-                        .multilineTextAlignment(.center)
-                        .padding()
-                    Button("Retry") {
-                        Task {
-                            await viewModel.loadCards()
+                        .foregroundColor(.white)
+                } else if let errorMessage = viewModel.errorMessage {
+                    VStack(spacing: 20) {
+                        Image(systemName: "exclamationmark.triangle")
+                            .font(.system(size: 60))
+                            .foregroundColor(.white)
+                        Text(errorMessage)
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .multilineTextAlignment(.center)
+                            .padding()
+                        Button("Retry") {
+                            Task {
+                                await viewModel.loadCards()
+                            }
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                } else if let card = viewModel.currentCard {
+                    // カードスタック表示（中央に大きく配置）
+                    ZStack {
+                        cardStackView(currentCard: card, screenSize: geometry.size)
+
+                        // カード生成中のプログレスオーバーレイ
+                        if viewModel.isGeneratingCard {
+                            generationProgressOverlay
                         }
                     }
-                    .buttonStyle(.borderedProminent)
-                }
-            } else if let card = viewModel.currentCard {
-                VStack(spacing: 0) {
-                    actionButton(
-                        icon: "trash",
-                        color: .red,
-                        action: { viewModel.handleDelete() }
-                    )
-                    .padding(.bottom, 30)
+                    .offset(y: -30)  // カードを上に移動
 
-                    HStack(spacing: 40) {
-                        actionButton(
-                            icon: "arrow.uturn.backward",
-                            color: .blue,
-                            action: { viewModel.handleUndo() }
-                        )
-
-                        SwipeableCardView(card: card) { direction in
-                            viewModel.handleSwipe(direction: direction)
+                    // 上部中央：Deleteボタン
+                    VStack {
+                        HStack {
+                            Spacer()
+                            actionButton(
+                                icon: "trash",
+                                color: .red,
+                                action: { viewModel.handleDelete() }
+                            )
+                            .padding(.top, 20)
+                            Spacer()
                         }
-
-                        actionButton(
-                            icon: "hand.thumbsup.fill",
-                            color: .green,
-                            action: { viewModel.handleLike() }
-                        )
+                        Spacer()
                     }
 
-                    actionButton(
-                        icon: "forward.end",
-                        color: .orange,
-                        action: { viewModel.handleSkip() }
-                    )
-                    .padding(.top, 30)
+                    // 左下：Cutボタン
+                    VStack {
+                        Spacer()
+                        HStack {
+                            actionButton(
+                                icon: "scissors",
+                                color: Color(red: 1.0, green: 0.6, blue: 0.4),
+                                action: { viewModel.handleCut() }
+                            )
+                            .padding(.leading, 30)
+                            .padding(.bottom, 80)  // ボタンを下に移動
+                            Spacer()
+                        }
+                    }
+
+                    // 右下：Likeボタン
+                    VStack {
+                        Spacer()
+                        HStack {
+                            Spacer()
+                            actionButton(
+                                icon: "hand.thumbsup.fill",
+                                color: .green,
+                                action: { viewModel.handleLike() }
+                            )
+                            .padding(.trailing, 30)
+                            .padding(.bottom, 80)  // ボタンを下に移動
+                        }
+                    }
+                } else {
+                    VStack(spacing: 20) {
+                        Image(systemName: "photo.on.rectangle.angled")
+                            .font(.system(size: 60))
+                            .foregroundColor(.white)
+                        Text("No more cards")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                    }
                 }
-            } else {
-                VStack(spacing: 20) {
-                    Image(systemName: "photo.on.rectangle.angled")
-                        .font(.system(size: 60))
-                        .foregroundColor(.gray)
-                    Text("No more cards")
-                        .font(.headline)
-                        .foregroundColor(.gray)
+
+                // 全画面オーバーレイ（スワイプ時の方向表示）
+                if let direction = currentSwipeDirection {
+                    swipeOverlay(for: direction)
+                        .ignoresSafeArea()
+                        .allowsHitTesting(false)
+                        .transition(.opacity)
+                }
+
+                // マイク入力ボタン（下部中央に配置）
+                VStack {
+                    Spacer()
+                    micButton
+                        .padding(.bottom, 50)
+                }
+
+                // リアルタイム音声認識テキスト表示（録音中のみ）
+                if speechViewModel.isRecording && !speechViewModel.recognizedText.isEmpty {
+                    VStack {
+                        Spacer()
+                        Text(speechViewModel.recognizedText)
+                            .font(.system(size: 24, weight: .medium))
+                            .foregroundColor(.white)
+                            .padding(30)
+                            .background(
+                                Color.black.opacity(0.7)
+                                    .cornerRadius(16)
+                            )
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 40)
+                        Spacer()
+                    }
+                    .transition(.opacity)
+                    .animation(.easeInOut(duration: 0.2), value: speechViewModel.recognizedText)
                 }
             }
         }
         .task {
             await viewModel.loadCards()
+
+            speechViewModel.onRecognitionCompleted = { recognizedText in
+                Task { @MainActor in
+                    await viewModel.addTaskCard(taskText: recognizedText)
+                }
+            }
         }
     }
 
@@ -93,6 +177,230 @@ struct ContentView: View {
                 .clipShape(Circle())
                 .shadow(color: .black.opacity(0.2), radius: 5, x: 0, y: 2)
         }
+    }
+
+    @ViewBuilder
+    private func cardStackView(currentCard: Card, screenSize: CGSize) -> some View {
+        let stackCards = [currentCard] + viewModel.getUpcomingCards(count: 2)
+
+        // カードサイズを調整（画面の80%幅、70%高さ）
+        let cardWidth = screenSize.width * 0.80
+        let cardHeight = screenSize.height * 0.7
+
+        ZStack {
+            ForEach(Array(stackCards.enumerated()), id: \.element.id) { index, stackCard in
+                if index == 0 {
+                    SwipeableCardView(
+                        card: stackCard,
+                        onSwipe: { direction in
+                            viewModel.handleSwipe(direction: direction)
+                        },
+                        onSwipeProgress: { progress in
+                            swipeProgress = progress
+                        },
+                        onSwipeDirectionChange: { direction in
+                            currentSwipeDirection = direction
+                        }
+                    )
+                    .frame(width: cardWidth, height: cardHeight)
+                    .scaleEffect(calculateScale(for: index))
+                    .offset(y: calculateOffset(for: index))
+                    .opacity(1.0)
+                    .zIndex(Double(stackCards.count - index))
+                    .animation(.spring(), value: swipeProgress)
+                } else {
+                    CardView(card: stackCard)
+                        .allowsHitTesting(false)
+                        .frame(width: cardWidth, height: cardHeight)
+                        .scaleEffect(calculateScale(for: index))
+                        .offset(y: calculateOffset(for: index))
+                        .opacity(0.5 - Double(index - 1) * 0.15)
+                        .zIndex(Double(stackCards.count - index))
+                        .animation(.spring(), value: swipeProgress)
+                }
+            }
+        }
+        .animation(.spring(response: 0.5, dampingFraction: 0.7), value: currentCard.id)
+    }
+
+    private func calculateScale(for index: Int) -> CGFloat {
+        if index == 0 {
+            return 1.0
+        } else if index == 1 {
+            // 進行度に応じて0.95から1.0に拡大
+            return 0.95 + swipeProgress * 0.05
+        } else {
+            // index 2以降も進行度に応じて拡大
+            return 1.0 - CGFloat(index) * 0.05 + swipeProgress * 0.05
+        }
+    }
+
+    private func calculateOffset(for index: Int) -> CGFloat {
+        if index == 0 {
+            return 0
+        } else if index == 1 {
+            // 進行度に応じて10から0に移動
+            return CGFloat(index) * 10 - swipeProgress * 10
+        } else {
+            // index 2以降も進行度に応じて移動
+            return CGFloat(index) * 10 - swipeProgress * 10
+        }
+    }
+
+    private var micButton: some View {
+        Button(action: {}) {
+            Image(systemName: "mic.fill")
+                .font(.system(size: 28))
+                .foregroundColor(.white)
+                .frame(width: 70, height: 70)
+                .background(speechViewModel.isRecording ? Color.red : Color.blue)
+                .clipShape(Circle())
+                .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
+        }
+        .scaleEffect(speechViewModel.isRecording ? 1.2 : 1.0)
+        .animation(.spring(response: 0.3), value: speechViewModel.isRecording)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    if !speechViewModel.isRecording {
+                        Task {
+                            await speechViewModel.startRecording()
+                        }
+                    }
+                }
+                .onEnded { _ in
+                    if speechViewModel.isRecording {
+                        speechViewModel.stopRecording()
+                    }
+                }
+        )
+        .alert("エラー", isPresented: .constant(speechViewModel.errorMessage != nil)) {
+            Button("OK") {
+                speechViewModel.errorMessage = nil
+            }
+            Button("設定を開く") {
+                if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(settingsURL)
+                }
+            }
+        } message: {
+            if let errorMessage = speechViewModel.errorMessage {
+                Text(errorMessage)
+            }
+        }
+    }
+
+    // 背景装飾用のカード
+    private var decorativeCard: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 12)
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color(red: 0.4, green: 0.3, blue: 0.25),
+                            Color(red: 0.25, green: 0.2, blue: 0.15)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .shadow(color: .black.opacity(0.4), radius: 8, x: 0, y: 4)
+        }
+    }
+
+    // 全画面スワイプオーバーレイ
+    private func swipeOverlay(for direction: SwipeDirection) -> some View {
+        ZStack {
+            // 半透明背景
+            colorForDirection(direction)
+                .opacity(0.3)
+
+            // アイコンとテキスト
+            VStack(spacing: 20) {
+                Image(systemName: iconForDirection(direction))
+                    .font(.system(size: 100))
+                    .foregroundColor(.white)
+                Text(textForDirection(direction))
+                    .font(.system(size: 40, weight: .bold))
+                    .foregroundColor(.white)
+            }
+        }
+    }
+
+    // スワイプ方向に応じたアイコン
+    private func iconForDirection(_ direction: SwipeDirection) -> String {
+        switch direction {
+        case .up:
+            return "trash"
+        case .right:
+            return "hand.thumbsup.fill"
+        case .cut:
+            return "scissors"
+        case .left:
+            return "scissors"
+        }
+    }
+
+    // スワイプ方向に応じたテキスト
+    private func textForDirection(_ direction: SwipeDirection) -> String {
+        switch direction {
+        case .up:
+            return "Delete"
+        case .right:
+            return "Like"
+        case .cut:
+            return "Cut"
+        case .left:
+            return "Cut"
+        }
+    }
+
+    // スワイプ方向に応じた色
+    private func colorForDirection(_ direction: SwipeDirection) -> Color {
+        switch direction {
+        case .up:
+            return .red
+        case .right:
+            return .green
+        case .cut:
+            return Color(red: 1.0, green: 0.6, blue: 0.4)
+        case .left:
+            return Color(red: 1.0, green: 0.6, blue: 0.4)
+        }
+    }
+
+    // カード生成中のプログレスオーバーレイ
+    private var generationProgressOverlay: some View {
+        ZStack {
+            // 半透明の背景でカードを暗くする
+            Color.black.opacity(0.6)
+                .cornerRadius(20)
+
+            // 円形プログレスバーと進行状況テキスト
+            VStack(spacing: 24) {
+                // 円形プログレスバー
+                ZStack {
+                    Circle()
+                        .stroke(Color.white.opacity(0.3), lineWidth: 6)
+                        .frame(width: 80, height: 80)
+
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .scaleEffect(1.8)
+                }
+
+                // 進行状況テキスト
+                if !viewModel.generationProgress.isEmpty {
+                    Text(viewModel.generationProgress)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+                }
+            }
+        }
+        .transition(.opacity)
+        .animation(.easeInOut(duration: 0.3), value: viewModel.isGeneratingCard)
     }
 }
 

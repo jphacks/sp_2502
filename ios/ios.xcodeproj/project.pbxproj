@@ -6,13 +6,30 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		9830BD7F2EA38083001B2823 /* Auth0 in Frameworks */ = {isa = PBXBuildFile; productRef = 9830BD7E2EA38083001B2823 /* Auth0 */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		1090E0CF2EA371F400C92785 /* ios.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ios.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		98E3FC9C2EA4785B00CAB088 /* Exceptions for "ios" folder in "ios" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 1090E0CE2EA371F400C92785 /* ios */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		1090E0D12EA371F400C92785 /* ios */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				98E3FC9C2EA4785B00CAB088 /* Exceptions for "ios" folder in "ios" target */,
+			);
 			path = ios;
 			sourceTree = "<group>";
 		};
@@ -23,6 +40,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9830BD7F2EA38083001B2823 /* Auth0 in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +83,7 @@
 			);
 			name = ios;
 			packageProductDependencies = (
+				9830BD7E2EA38083001B2823 /* Auth0 */,
 			);
 			productName = ios;
 			productReference = 1090E0CF2EA371F400C92785 /* ios.app */;
@@ -94,6 +113,9 @@
 			);
 			mainGroup = 1090E0C62EA371F400C92785;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				9830BD7D2EA38083001B2823 /* XCRemoteSwiftPackageReference "Auth0" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 1090E0D02EA371F400C92785 /* Products */;
 			projectDirPath = "";
@@ -251,11 +273,15 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = ios/ios.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = XTG6342868;
+				DEVELOPMENT_TEAM = 6TFML7T4SF;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ios/Info.plist;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "音声入力機能を使用するためにマイクへのアクセスが必要です";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "音声をテキストに変換するために音声認識機能を使用します";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -283,11 +309,15 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = ios/ios.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = XTG6342868;
+				DEVELOPMENT_TEAM = 6TFML7T4SF;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ios/Info.plist;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "音声入力機能を使用するためにマイクへのアクセスが必要です";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "音声をテキストに変換するために音声認識機能を使用します";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -332,6 +362,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		9830BD7D2EA38083001B2823 /* XCRemoteSwiftPackageReference "Auth0" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/auth0/Auth0.swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.15.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		9830BD7E2EA38083001B2823 /* Auth0 */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9830BD7D2EA38083001B2823 /* XCRemoteSwiftPackageReference "Auth0" */;
+			productName = Auth0;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 1090E0C72EA371F400C92785 /* Project object */;
 }

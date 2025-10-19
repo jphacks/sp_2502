@@ -5,24 +5,29 @@ import postgres from "postgres";
 
 import { env } from "@/env";
 
-import { accounts } from "./schema/accounts";
 import { notes } from "./schema/notes";
+import { projects } from "./schema/projects";
 import {
-  accountsRelations,
-  sessionsRelations,
+  projectsRelations,
+  taskChildrenRelations,
+  tasksRelations,
   usersRelations,
 } from "./schema/relations";
-import { sessions } from "./schema/sessions";
+import { taskChildren } from "./schema/task_children";
+import { tasks, taskStatusEnum } from "./schema/tasks";
 import { users } from "./schema/users";
 
 const schema = {
-  accounts,
   notes,
-  sessions,
   users,
-  accountsRelations,
-  sessionsRelations,
+  projects,
+  tasks,
+  taskChildren,
+  taskStatusEnum,
   usersRelations,
+  projectsRelations,
+  tasksRelations,
+  taskChildrenRelations,
 };
 
 type DBPg = ReturnType<typeof drizzlePg>;
