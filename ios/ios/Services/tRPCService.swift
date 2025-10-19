@@ -105,7 +105,9 @@ final class tRPCService {
                 if let raw = String(data: plain, encoding: .utf8) { print("plain:", raw) }
 
                 // 2) あとは任意の型で普通にデコード
-                 let notes = try self.decoder.decode([Note].self, from: plain)
+                let notes = try self.decoder.decode([Note].self, from: plain)
+                // 例
+                print(notes[0].id)
             } catch {
                 print("transform failed:", error)
             }
