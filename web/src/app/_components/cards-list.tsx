@@ -21,12 +21,13 @@ import { Wrap, WrapItem, Card, CardBody, Text } from "@chakra-ui/react";
 
 type Item = {
   id: number;
-  title: string;
-  description: string;
+  taskname: string;
+  pretask: string[];
 };
 
 type CardListProps = {
   items: Item[];
+  onSelect: (pretask: string[]) => void;
 };
 
 export default function CardList({ items }: CardListProps) {
@@ -35,12 +36,14 @@ export default function CardList({ items }: CardListProps) {
       {items.map(item => (
         <WrapItem key={item.id}>
           <Card.Root
+            as="button"
             w="278px"
             h="175px"
             bg="transparent"
             borderRadius="0"
             border="none"
             bgImage="url('/images/choco.svg')">
+            onClick={() => onSelect(item.pretask)}
             {/* <CardHeader>
               <Heading size="md">{item.title}</Heading>
             </CardHeader> */}
@@ -49,7 +52,7 @@ export default function CardList({ items }: CardListProps) {
               alignItems="center"
               justifyContent="center">
               <Text fontSize="32px" color="#FFBE45">
-                {item.description}
+                {item.taskname}
               </Text>
             </CardBody>
           </Card.Root>

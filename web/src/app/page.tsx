@@ -1,10 +1,17 @@
 import { Box, HStack, VStack, Text } from "@chakra-ui/react";
+import { useState } from "react";
 import { FaAngleDown } from "react-icons/fa6";
 
 import CardList from "@/app/_components/cards-list";
 import { HydrateClient } from "@/trpc/server";
 
-export default async function Home() {
+  export type CardListItemType = {
+    id: number;
+    taskname: string;
+    pretask: string[];
+  };
+
+export default function Home() {
   const listA = [
     { id: 1, title: "カード1", description: "最初のカード" },
     { id: 2, title: "カード2", description: "2番目のカード" },
@@ -16,11 +23,16 @@ export default async function Home() {
     { id: 2, title: "カード2", description: "2番目のカード" },
     { id: 3, title: "カード3", description: "3番目のカード" },
   ];
-  const listB = [
-    { id: 1, taskname: "キーワード決定" },
-    { id: 2, taskname: "参考文献探し" },
-    { id: 3, taskname: "心理学レポート" },
+  const listB:CardListItemType[] = [
+    { id: 1, taskname: "キーワード決定", pretask: ["aaa", "bbb", "ccc"] },
+    { id: 2, taskname: "参考文献探し" , pretask: ["aaa", "bbb", "ccc"]},
+    { id: 3, taskname: "心理学レポート" , pretask: ["aaa", "bbb", "ccc"]},
   ];
+
+  const [selectedItem, setSelectedItem] = useState<ItemType>({
+    id: 0,
+    title:
+  })
 
   return (
     <HydrateClient>
@@ -130,7 +142,7 @@ export default async function Home() {
                 タスクのカケラ
               </Text>
             </Box>
-            <CardList items={listA} />
+            <CardList items={listA} onSelect={setSelectedItem} />
           </VStack>
         </Box>
       </HStack>
