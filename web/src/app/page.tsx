@@ -30,13 +30,19 @@ export default async function Home() {
     { id: 1, taskname: "キーワード決定"},
     { id: 2, taskname: "参考文献探し"},
     { id: 3, taskname: "心理学レポート"},
+    { id: 4, taskname: "心理学レポート"},
+    { id: 5, taskname: "心理学レポート"},
+    { id: 6, taskname: "心理学レポート"},
+    { id: 7, taskname: "心理学レポート"},
+    { id: 8, taskname: "心理学レポート"},
+    { id: 9, taskname: "心理学レポート"},
   ];
 
   return(
     <HydrateClient>
         <HStack w="100vw" h="100vh" gap={0} bg="white">
           <Box bg="white" w="300px" minW="300px" h="full" >
-            <VStack mt="33px">
+            <VStack mt="33px" h="full">
               <Box w="185px" h="185px" border="none" bgImage="url('/images/check.svg')"/>
               <Box mt="22px" w="268px" h="165px" border="none" bgImage="url('/images/choco.svg')" display="flex" alignItems="center" justifyContent="center">
                 <Text fontSize="32px" color="#FFBE45">キーワード探し</Text>
@@ -51,7 +57,7 @@ export default async function Home() {
                 ))}
               </Box>
 
-              <Box  mb="48px" position="fixed" bottom="0px" w="277px" h="79px" bg="#FFBE45"  borderRadius="15px" display="flex" alignItems="center" justifyContent="center">
+              <Box  mb="48px" mt="10px" bottom="0px" w="277px" h="79px" bg="#FFBE45"  borderRadius="15px" display="flex" alignItems="center" justifyContent="center">
                 <Text fontSize="40px" color="#000000">タスク追加</Text>
               </Box>
             </VStack>
