@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-このファイルは、Claude CodeがこのT3 Stackテンプレートリポジトリで作業する際の技術ガイダンスを提供します。
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 # Top-level Guidelines for Claude Code
 
@@ -13,16 +13,16 @@
 
 ## プロジェクト概要
 
-以下の技術で構築されたフルスタックTypeScriptアプリケーションテンプレート：
+「パキッと クネクネタスク」のWebバックエンドおよび管理画面。タスク管理を支援するフルスタックTypeScriptアプリケーション：
 
 - **Next.js 15** (App Router)
 - **TypeScript 5.8**
 - **tRPC 11** - 型安全なAPI
 - **Auth0** (@auth0/nextjs-auth0 v4) - 認証機能
-- **Drizzle ORM** - PostgreSQL対応
-- **Chakra UI** - スタイリング
-- **React 19** - React Query対応
-- **ESLint 9** + **Prettier** - コード品質管理
+- **Drizzle ORM 0.41** - PostgreSQL対応
+- **Chakra UI 3.27** - UIコンポーネント
+- **React 19** + **React Query 5.69** - ステート管理
+- **ESLint 9** + **Prettier 3.6** - コード品質管理
 
 ---
 
@@ -332,190 +332,83 @@ export const createNote = protectedProcedure
 
 | エンドポイント | メソッド | 用途 | 認証必須 |
 |---|---|---|---|
-| `note.create` | mutation | ノート作成 | ✅ |
-| `note.list` | query | ノート一覧取得 | ✅ |
-| `note.update` | mutation | ノート更新 | ✅ |
-| `note.delete` | mutation | ノート削除 | ✅ |
 | `task.activeList` | query | アクティブタスク一覧 | ✅ |
+| `task.unprocessedList` | query | 未処理タスク一覧 | ✅ |
 | `task.projectCreate` | mutation | プロジェクト+タスク作成 | ✅ |
 | `task.delete` | mutation | タスク削除 | ✅ |
+| `task.statusUpdate` | mutation | タスクステータス更新 | ✅ |
+| `task.select` | mutation | タスク選択(子タスク取得) | ✅ |
+| `task.complete` | mutation | タスク完了 | ✅ |
 | `ai.splitTask` | mutation | タスク分割(AI) | ✅ |
 
 ### エンドポイント詳細
 
-#### Note エンドポイント
-
-##### `note.create` - ノート作成
-
-```typescript
-// リクエスト
-{
-  title: string,    // 1-100文字
-  content: string   // 1-10000文字
-}
-
-// レスポンス (NoteDTO)
-{
-  id: string,           // NoteId Brand型
-  userId: string,       // UserId Brand型
-  title: string,
-  content: string,
-  createdAt: Date,
-  updatedAt: Date
-}
-```
-
-##### `note.list` - ノート一覧取得
-
-```typescript
-// リクエスト (オプション)
-{
-  limit?: number,   // 1-100, デフォルト: 50
-  offset?: number   // 0以上, デフォルト: 0
-}
-
-// レスポンス
-{
-  notes: Array<NoteDTO>
-}
-```
-
-##### `note.update` - ノート更新
-
-```typescript
-// リクエスト
-{
-  noteId: string,
-  title?: string,    // 1-100文字
-  content?: string   // 1-10000文字
-}
-// 注意: titleまたはcontentの少なくとも1つが必須
-
-// レスポンス (NoteDTO)
-{
-  id: string,
-  userId: string,
-  title: string,
-  content: string,
-  createdAt: Date,
-  updatedAt: Date
-}
-```
-
-##### `note.delete` - ノート削除
-
-```typescript
-// リクエスト
-{
-  noteId: string
-}
-
-// レスポンス (削除されたNoteDTO)
-{
-  id: string,
-  userId: string,
-  title: string,
-  content: string,
-  createdAt: Date,
-  updatedAt: Date
-}
-```
+各エンドポイントの詳細な型定義は、対応するcontract.tsファイルを参照してください。
 
 #### Task エンドポイント
 
 ##### `task.activeList` - アクティブタスク一覧
 
-```typescript
-// リクエスト (オプション)
-{
-  order?: "desc" | "asc"  // デフォルト: "desc"
-}
+**型定義**: `src/server/modules/task/activeList/contract.ts`
 
-// レスポンス
-{
-  tasks: Array<TaskDTO>
-}
+- **リクエスト**: オプションでソート順を指定（`order?: "desc" | "asc"`）
+- **レスポンス**: タスクの配列（`tasks: Array<TaskDTO>`）
 
-// TaskDTO構造
-{
-  id: string,              // TaskId Brand型
-  userId: string,          // UserId Brand型
-  projectId: string,       // ProjectId Brand型
-  name: string,            // 1-100文字
-  createdAt: Date,
-  updatedAt: Date,
-  status: "unprocessed" | "active" | "completed" | "waiting",
-  date: Date | null,
-  priority: string | null,
-  parentId: string | null  // TaskId Brand型
-}
-```
+##### `task.unprocessedList` - 未処理タスク一覧
+
+**型定義**: `src/server/modules/task/unprocessedList/contract.ts`
+
+- **リクエスト**: なし
+- **レスポンス**: 未処理タスクの配列（`status` が `"unprocessed"` のタスク）
 
 ##### `task.projectCreate` - プロジェクト+タスク作成
 
-```typescript
-// リクエスト
-{
-  projectName: string,  // 1-255文字
-  taskName: string      // 1-255文字
-}
+**型定義**: `src/server/modules/task/projectCreate/contract.ts`
 
-// レスポンス (TaskDTO)
-{
-  id: string,
-  userId: string,
-  projectId: string,
-  name: string,
-  createdAt: Date,
-  updatedAt: Date,
-  status: "unprocessed" | "active" | "completed" | "waiting",
-  date: Date | null,
-  priority: string | null,
-  parentId: string | null
-}
-```
+- **リクエスト**: プロジェクト名とタスク名
+- **レスポンス**: 作成されたタスク（`TaskDTO`）
 
 ##### `task.delete` - タスク削除
 
-```typescript
-// リクエスト
-{
-  taskId: string  // TaskId Brand型
-}
+**型定義**: `src/server/modules/task/delete/contract.ts`
 
-// レスポンス (削除されたTaskDTO)
-{
-  id: string,
-  userId: string,
-  projectId: string,
-  name: string,
-  createdAt: Date,
-  updatedAt: Date,
-  status: "unprocessed" | "active" | "completed" | "waiting",
-  date: Date | null,
-  priority: string | null,
-  parentId: string | null
-}
-```
+- **リクエスト**: タスクID（`taskId: TaskId`）
+- **レスポンス**: 削除されたタスク（`TaskDTO`）
+
+##### `task.statusUpdate` - タスクステータス更新
+
+**型定義**: `src/server/modules/task/statusUpdate/contract.ts`
+
+- **リクエスト**: タスクIDと新しいステータス
+- **レスポンス**: 更新されたタスク（`TaskDTO`）
+
+##### `task.select` - タスク選択（子タスク取得）
+
+**型定義**: `src/server/modules/task/select/contract.ts`
+
+- **リクエスト**: 親タスクID（`taskId: TaskId`）
+- **レスポンス**: 子タスクの配列（`childTasks: Array<TaskDTO>`）
+
+##### `task.complete` - タスク完了
+
+**型定義**: `src/server/modules/task/complete/contract.ts`
+
+- **リクエスト**: タスクID（`taskId: TaskId`）
+- **レスポンス**: 完了したタスク（`status` が `"completed"` に更新）
 
 #### AI エンドポイント
 
 ##### `ai.splitTask` - タスク分割
 
-```typescript
-// リクエスト
-{
-  task_id: string  // TaskId
-}
+**型定義**: `src/server/modules/ai/splitTask/contract.ts`
 
-// レスポンス
-{
-  first_task_id: string,    // TaskId Brand型
-  first_task_name: string,
-  second_task_id: string,   // TaskId Brand型
-  second_task_name: string
-}
-```
+- **リクエスト**: タスクID（`task_id: string`）
+- **レスポンス**: 分割された2つのタスク情報
+
+#### 共通型定義
+
+- **TaskDTO**: `src/server/modules/task/_dto.ts` - タスクのデータ転送オブジェクト
+- **Brand型**: `src/server/types/brand.ts` - 型安全な識別子（UserId、TaskId、ProjectId等）
 
 ### フロントエンド実装例
 
@@ -760,13 +653,14 @@ export const createPost = protectedProcedure
 
 **Auth0関連：**
 - `AUTH0_SECRET` - セッション暗号化キー（`openssl rand -base64 32`で生成）
-- `AUTH0_BASE_URL` - アプリケーションのベースURL
+- `AUTH0_BASE_URL` - アプリケーションのベースURL（デフォルト: `http://localhost:3304`）
 - `AUTH0_ISSUER_BASE_URL` - Auth0テナントのドメインURL（例：`https://your-tenant.auth0.com`）
 - `AUTH0_CLIENT_ID` - Auth0アプリケーションID
 - `AUTH0_CLIENT_SECRET` - Auth0アプリケーションシークレット
 
 **データベース関連：**
-- `POSTGRES_*` - データベース接続（DATABASE_URLに統合）
+- `LOCAL_DATABASE_URL` - ローカルPostgreSQL接続文字列（例：`postgresql://postgres:postgres@localhost:5334/database`）
+- `DB_RUNTIME` - データベース実行環境（`"local"` または `"neon"`）
 
 #### Auth0テナント情報の取得方法
 

@@ -2,6 +2,13 @@
 
 このファイルは、Claude Code (claude.ai/code) がこのリポジトリで作業する際のトップレベルガイダンスを提供します。
 
+## トップレベルガイドライン
+
+- **All file writes must use UTF-8 encoding with LF (Unix-style) line endings, not Shift-JIS**.
+- You must **think exclusively in English**. However, you must need to **respond in Japanese**.
+- To maximize efficiency, if you need to execute multiple independent processes, invoke those tools concurrently, not sequentially.
+- **Do not use emojis in any documentation, code comments, or commit messages unless explicitly requested by the user**.
+
 ## プロジェクト概要
 
 このプロジェクトは、カードスワイプ型のタスク管理アプリケーションです。iOSネイティブアプリとWebバックエンドAPIで構成され、音声入力によるタスク作成、AI画像生成、Auth0認証を特徴としています。
@@ -142,10 +149,13 @@ sp_2502/
 |---|---|---|---|
 | `/api/trpc/card.list` | GET | カード一覧取得 | `tRPCService.fetchCards()` |
 | `/api/trpc/card.action` | POST | スワイプアクション送信 | `tRPCService.sendSwipeAction()` |
-| `/api/trpc/note.list` | GET | ノート一覧取得 | (サンプル) |
+| `/api/trpc/task.*` | - | タスク管理エンドポイント群 | - |
+| `/api/trpc/ai.splitTask` | POST | AIタスク分割 | - |
 | `/auth/login` | - | ログイン開始 | Auth0.webAuth() |
 | `/auth/logout` | - | ログアウト | Auth0.webAuth().clearSession() |
 | `/auth/callback` | - | OAuthコールバック | Auth0自動処理 |
+
+**詳細なAPIエンドポイント仕様（リクエスト/レスポンススキーマ、Brand型など）は `web/CLAUDE.md` の「APIエンドポイントリファレンス」セクションを参照してください。**
 
 ## 認証フロー
 
@@ -273,6 +283,8 @@ docker compose down      # 停止
 docker compose down -v   # 停止＆データ削除
 ```
 
+**より詳細な開発ガイドライン（新機能の追加フロー、コーディング規約、Claude Code Hooksなど）は `web/CLAUDE.md` の「開発ガイドライン」セクションを参照してください。**
+
 ## 重要な実装パターン
 
 ### iOS: モード切り替え
@@ -351,16 +363,17 @@ DATABASE_URL=postgresql://postgres:postgres@localhost:5334/database
 
 ### Web
 
-1. **Claude Code Hooks**: ファイル編集時に自動でtypecheck + lint + format実行
-2. **usecase-maker Agent**: 新規APIエンドポイント作成時に活用
+1. **Claude Code Hooks**: ファイル編集時に自動でtypecheck + lint + format実行（詳細は`web/CLAUDE.md`参照）
+2. **usecase-maker Agent**: 新規APIエンドポイント作成時に活用（詳細は`web/CLAUDE.md`参照）
 3. **SuperJSON Transformer**: Date、Map、Setなどを自動処理
 4. **Timing Middleware**: 開発環境で100-500msの人工的遅延
 5. **アロー関数のみ**: `function` 宣言は禁止（ESLintルール）
+6. **Result型パターン**: Go言語に触発されたエラーハンドリング（詳細は`web/CLAUDE.md`参照）
+7. **Brand型**: 型安全な識別子システム（UserId、TaskId等）（詳細は`web/CLAUDE.md`参照）
 
 ## ブランチ戦略
 
 - **メインブランチ**: `main`
-- **現在のブランチ**: `famisics/#15/improve-swift`
 - PRは `main` ブランチに対して作成
 
 ## 詳細ガイド
@@ -372,6 +385,6 @@ DATABASE_URL=postgresql://postgres:postgres@localhost:5334/database
 
 1. **型安全性**: iOS (Swift型) ↔ Web (TypeScript型) でエンドツーエンドの型安全性を維持
 2. **エラーハンドリング**: 両プラットフォームで明示的なエラー処理
-3. **認証**: Auth0による統一認証（現在はiOS側で一時的にスキップ）
-4. **API通信**: tRPC + SuperJSONのみ使用（RESTful APIは使用しない）
+3. **認証**: Auth0による統一認証
+4. **API通信**: tRPC + SuperJSON
 5. **コード品質**: iOS (xcodebuild) / Web (typecheck + lint + format) で検証
