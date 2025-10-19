@@ -10,8 +10,9 @@ import {
   type InsertTask,
   type SelectTask,
   tasks,
+  type taskStatusEnum,
 } from "@/server/db/schema/tasks";
-import type { UserId } from "@/server/types/brand";
+import type { UserId, TaskId } from "@/server/types/brand";
 import { type AppError, Errors } from "@/server/types/errors";
 import { Err, Ok } from "@/server/types/result";
 import type { AsyncResult } from "@/server/types/result";
@@ -119,6 +120,77 @@ export const deleteTask = async (
       return Err(Errors.notFound());
     }
     return Ok(deleted);
+  } catch (e) {
+    return Err(Errors.infraDb("DB_ERROR", e));
+  }
+};
+
+export const selectTaskById = async (
+  db: DBLike,
+  values: {
+    taskId: TaskId;
+    userId: UserId;
+  },
+): AsyncResult<SelectTask, AppError> => {
+  try {
+    const [task] = await db
+      .select()
+      .from(tasks)
+      .where(and(eq(tasks.id, values.taskId), eq(tasks.userId, values.userId)))
+      .limit(1);
+    if (!task) {
+      return Err(Errors.notFound());
+    }
+    return Ok(task);
+  } catch (e) {
+    return Err(Errors.infraDb("DB_ERROR", e));
+  }
+};
+
+export const selectChildTasksByParentId = async (
+  db: DBLike,
+  values: {
+    parentId: TaskId;
+    userId: UserId;
+  },
+): AsyncResult<SelectTask[], AppError> => {
+  try {
+    const rows = await db
+      .select()
+      .from(tasks)
+      .where(
+        and(
+          eq(tasks.parentId, values.parentId),
+          eq(tasks.userId, values.userId),
+        ),
+      );
+    return Ok(rows);
+  } catch (e) {
+    return Err(Errors.infraDb("DB_ERROR", e));
+  }
+};
+
+export const updateTaskStatus = async (
+  db: DBLike,
+  values: {
+    taskId: TaskId;
+    userId: UserId;
+    status: (typeof taskStatusEnum.enumValues)[number];
+  },
+): AsyncResult<SelectTask, AppError> => {
+  try {
+    const [updated] = await db
+      .update(tasks)
+      .set({
+        status: values.status,
+        updatedAt: sql`now()`,
+      })
+      .where(and(eq(tasks.id, values.taskId), eq(tasks.userId, values.userId)))
+      .returning();
+    if (!updated) {
+      return Err(Errors.notFound());
+    }
+    return Ok(updated);
   } catch (e) {
     return Err(Errors.infraDb("DB_ERROR", e));
   }
