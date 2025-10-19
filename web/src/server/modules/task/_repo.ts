@@ -40,6 +40,31 @@ export const selectActiveTasksByUserId = async (
   }
 };
 
+export const selectUnprocessedTasksByUserId = async (
+  db: DBLike,
+  values: {
+    userId: UserId;
+  },
+  opts?: {
+    orderBy?: "desc" | "asc";
+  },
+): AsyncResult<SelectTask[], AppError> => {
+  try {
+    const rows = await db
+      .select()
+      .from(tasks)
+      .where(
+        and(eq(tasks.userId, values.userId), eq(tasks.status, "unprocessed")),
+      )
+      .orderBy(
+        opts?.orderBy === "asc" ? tasks.createdAt : desc(tasks.createdAt),
+      );
+    return Ok(rows);
+  } catch (e) {
+    return Err(Errors.infraDb("DB_ERROR", e));
+  }
+};
+
 export const insertProject = async (
   db: DBLike,
   values: {
