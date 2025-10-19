@@ -82,12 +82,15 @@ final class tRPCService {
         return any
     }
 
-    // MARK: - Card API
+    // MARK: - Task API
 
-    /// カード一覧を取得
-    func fetchCards(accessToken: String? = nil) async throws -> [Card] {
-        var comp = URLComponents(string: "https://sp-2502.vercel.app/api/trpc/card.list")!
-        let inputObj: [String: Any] = ["json": [:]]
+    /// 未処理タスク一覧を取得
+    /// ※ バックエンド未実装（task.unprocessedList）のため、現在は使用不可
+    /// TODO: バックエンド実装後にコメント解除
+    /*
+    func fetchUnprocessedTasks(order: String = "desc", accessToken: String? = nil) async throws -> [Card] {
+        var comp = URLComponents(string: "https://sp-2502.vercel.app/api/trpc/task.unprocessedList")!
+        let inputObj: [String: Any] = ["json": ["order": order]]
         let inputData = try JSONSerialization.data(withJSONObject: inputObj)
         comp.queryItems = [URLQueryItem(name: "input", value: String(data: inputData, encoding: .utf8)!)]
 
@@ -108,21 +111,53 @@ final class tRPCService {
             throw tRPCError.serverError(statusCode: httpResponse.statusCode)
         }
 
-        // SuperJSON から plain JSON に変換
         let plain = try superJSONToPlainJSONData(data, unwrapSingleArray: true)
-
-        // デコード
         let cards = try decoder.decode([Card].self, from: plain)
         return cards
     }
+    */
 
-    /// スワイプアクションを送信
-    func sendSwipeAction(cardId: String, action: String, accessToken: String? = nil) async throws {
-        var comp = URLComponents(string: "https://sp-2502.vercel.app/api/trpc/card.action")!
+    /// プロジェクト+タスクを作成
+    func createProjectAndTask(projectName: String, taskName: String, accessToken: String? = nil) async throws -> Card {
+        var comp = URLComponents(string: "https://sp-2502.vercel.app/api/trpc/task.projectCreate")!
         let inputObj: [String: Any] = [
             "json": [
-                "cardId": cardId,
-                "action": action
+                "projectName": projectName,
+                "taskName": taskName
+            ]
+        ]
+        let inputData = try JSONSerialization.data(withJSONObject: inputObj)
+        comp.queryItems = [URLQueryItem(name: "input", value: String(data: inputData, encoding: .utf8)!)]
+
+        var req = URLRequest(url: comp.url!)
+        req.httpMethod = "POST"
+        if let token = accessToken {
+            req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue("application/json", forHTTPHeaderField: "Accept")
+
+        let (data, response) = try await URLSession.shared.data(for: req)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw tRPCError.invalidResponse
+        }
+
+        guard (200...299).contains(httpResponse.statusCode) else {
+            throw tRPCError.serverError(statusCode: httpResponse.statusCode)
+        }
+
+        let plain = try superJSONToPlainJSONData(data, unwrapSingleArray: false)
+        let task = try decoder.decode(Card.self, from: plain)
+        return task
+    }
+
+    /// タスクを削除
+    func deleteTask(taskId: String, accessToken: String? = nil) async throws {
+        var comp = URLComponents(string: "https://sp-2502.vercel.app/api/trpc/task.delete")!
+        let inputObj: [String: Any] = [
+            "json": [
+                "taskId": taskId
             ]
         ]
         let inputData = try JSONSerialization.data(withJSONObject: inputObj)
@@ -147,44 +182,51 @@ final class tRPCService {
         }
     }
 
-    // MARK: - Sample Code (Note API)
+    struct SplitTaskResult: Decodable {
+        let firstTaskId: String
+        let firstTaskName: String
+        let secondTaskId: String
+        let secondTaskName: String
 
-    struct Note: Decodable {
-        let id: String
-        let userId: String
-        let title: String
-        let content: String?
-        let createdAt: Date
-        let updatedAt: Date
+        enum CodingKeys: String, CodingKey {
+            case firstTaskId = "first_task_id"
+            case firstTaskName = "first_task_name"
+            case secondTaskId = "second_task_id"
+            case secondTaskName = "second_task_name"
+        }
     }
 
-    func fetchNotes(accessToken: String) {
-        var comp = URLComponents(string: "https://sp-2502.vercel.app/api/trpc/note.list")!
-        let inputObj: [String: Any] = ["json": [:]]
-        let inputData = try! JSONSerialization.data(withJSONObject: inputObj)
-        comp.queryItems = [URLQueryItem(name: "input", value: String(data: inputData, encoding: .utf8)! )]
+    /// AIでタスクを分割
+    func splitTask(taskId: String, accessToken: String? = nil) async throws -> SplitTaskResult {
+        var comp = URLComponents(string: "https://sp-2502.vercel.app/api/trpc/ai.splitTask")!
+        let inputObj: [String: Any] = [
+            "json": [
+                "task_id": taskId
+            ]
+        ]
+        let inputData = try JSONSerialization.data(withJSONObject: inputObj)
+        comp.queryItems = [URLQueryItem(name: "input", value: String(data: inputData, encoding: .utf8)!)]
 
         var req = URLRequest(url: comp.url!)
-        req.httpMethod = "GET"
-        req.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        req.httpMethod = "POST"
+        if let token = accessToken {
+            req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.setValue("application/json", forHTTPHeaderField: "Accept")
 
-        URLSession.shared.dataTask(with: req) { data, _, err in
-            if let err = err { print("network error:", err); return }
-            guard let data = data else { print("no data"); return }
+        let (data, response) = try await URLSession.shared.data(for: req)
 
-            // 1) plain JSON Data を取得（notes配列にフラット化）
-            do {
-                let plain = try self.superJSONToPlainJSONData(data, unwrapSingleArray: true)
-                if let raw = String(data: plain, encoding: .utf8) { print("plain:", raw) }
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw tRPCError.invalidResponse
+        }
 
-                // 2) あとは任意の型で普通にデコード
-                let notes = try self.decoder.decode([Note].self, from: plain)
-                // 例
-                print(notes[0].id)
-            } catch {
-                print("transform failed:", error)
-            }
-        }.resume()
+        guard (200...299).contains(httpResponse.statusCode) else {
+            throw tRPCError.serverError(statusCode: httpResponse.statusCode)
+        }
+
+        let plain = try superJSONToPlainJSONData(data, unwrapSingleArray: false)
+        let result = try decoder.decode(SplitTaskResult.self, from: plain)
+        return result
     }
 }

@@ -11,9 +11,6 @@ struct AuthView: View {
             if !isAuthenticated {
                 VStack {
                     ContentView()
-                    Button("Fetch Notes") {
-                        tRPCService.shared.fetchNotes(accessToken: accessToken)
-                    }
                     Button("Logout", action: self.logout)
                 }
             } else {

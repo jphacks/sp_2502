@@ -31,14 +31,25 @@ class CardViewModel: ObservableObject {
         errorMessage = nil
 
         do {
+            // TODO: task.unprocessedList が実装されたらAPIモードでも使用する
+            // 現在はテストモードのみ使用
+            cards = try await mockDataProvider.fetchCards()
+            print("🧪 [Test Mode] Loaded \(cards.count) mock cards")
+
+            /* バックエンド実装後にコメント解除
             if appConfig.isTestMode {
                 cards = try await mockDataProvider.fetchCards()
                 print("🧪 [Test Mode] Loaded \(cards.count) mock cards")
             } else {
                 let accessToken = keychainHelper.getAccessToken()
-                cards = try await trpcService.fetchCards(accessToken: accessToken)
-                print("🌐 [API Mode] Loaded \(cards.count) cards from tRPC")
+                cards = try await trpcService.fetchUnprocessedTasks(order: "desc", accessToken: accessToken)
+                print("🌐 [API Mode] Loaded \(cards.count) unprocessed tasks from tRPC")
+
+                // APIから取得したタスクには画像がないので生成する
+                await generateImagesForCards()
             }
+            */
+
             currentCard = cards.first
         } catch {
             errorMessage = "Failed to load cards: \(error.localizedDescription)"
@@ -47,36 +58,82 @@ class CardViewModel: ObservableObject {
         isLoading = false
     }
 
+    /// APIから取得したカードに画像を生成する
+    @MainActor
+    private func generateImagesForCards() async {
+        for i in 0..<cards.count {
+            let card = cards[i]
+            // 画像URLが空または存在しない場合は生成
+            if card.imageURL.isEmpty {
+                let taskName = card.displayName
+                let emoji = emojiSelector.selectEmojiWithPriority(for: taskName)
+                if let imagePath = await imageGenerator.generateTaskImage(taskText: taskName, emoji: emoji) {
+                    // imageURLを更新
+                    let updatedCard = Card(
+                        id: card.id,
+                        imageURL: imagePath,
+                        taskText: taskName,
+                        emoji: emoji,
+                        title: card.title,
+                        userId: card.userId,
+                        projectId: card.projectId,
+                        name: card.name,
+                        date: card.date,
+                        status: card.status,
+                        priority: card.priority,
+                        parentId: card.parentId
+                    )
+                    cards[i] = updatedCard
+                }
+            }
+        }
+    }
+
     @MainActor
     func handleSwipe(direction: SwipeDirection) {
         guard let card = currentCard else { return }
 
-        let action: String
-        switch direction {
-        case .delete:
-            action = "delete"
-        case .like:
-            action = "like"
-        case .cut:
-            action = "cut"
-        }
-
         Task { @MainActor in
             do {
-                if appConfig.isTestMode {
-                    try await mockDataProvider.sendSwipeAction(cardId: card.id, action: action)
-                    print("🧪 [Test Mode] Sent action: \(action) for card: \(card.id)")
-                } else {
-                    let accessToken = keychainHelper.getAccessToken()
-                    try await trpcService.sendSwipeAction(cardId: card.id, action: action, accessToken: accessToken)
-                    print("🌐 [API Mode] Sent action: \(action) for card: \(card.id)")
+                switch direction {
+                case .delete:
+                    // タスクを削除
+                    if !appConfig.isTestMode {
+                        let accessToken = keychainHelper.getAccessToken()
+                        try await trpcService.deleteTask(taskId: card.id, accessToken: accessToken)
+                        print("🗑️ [API Mode] タスク削除: \(card.id)")
+                    } else {
+                        print("🧪 [Test Mode] タスク削除: \(card.id)")
+                    }
+                    moveToNextCard()
+
+                case .like:
+                    // Like アクションは何もしない（次のカードに移動のみ）
+                    print("❤️ Like: \(card.id)")
+                    moveToNextCard()
+
+                case .cut:
+                    // AIでタスクを分割
+                    if !appConfig.isTestMode {
+                        let accessToken = keychainHelper.getAccessToken()
+                        let result = try await trpcService.splitTask(taskId: card.id, accessToken: accessToken)
+                        print("✂️ [API Mode] タスク分割成功:")
+                        print("  - 1つ目: \(result.firstTaskName) (\(result.firstTaskId))")
+                        print("  - 2つ目: \(result.secondTaskName) (\(result.secondTaskId))")
+
+                        // 分割後、カードリストを再読込
+                        moveToNextCard()
+                        await loadCards()
+                    } else {
+                        print("🧪 [Test Mode] タスク分割: \(card.id)")
+                        moveToNextCard()
+                    }
                 }
             } catch {
-                errorMessage = "Failed to send action: \(error.localizedDescription)"
+                errorMessage = "アクションの実行に失敗しました: \(error.localizedDescription)"
+                print("❌ アクション失敗: \(error)")
             }
         }
-
-        moveToNextCard()
     }
 
     @MainActor
@@ -136,21 +193,56 @@ class CardViewModel: ObservableObject {
         }
         print("✅ 画像生成成功: \(imagePath)")
 
-        // ステップ3: タスクカードを作成
-        generationProgress = "カードを作成中..."
-        let taskCard = Card(
-            id: UUID().uuidString,
-            imageURL: imagePath,
-            taskText: taskText,
-            emoji: emoji,
-            title: taskText
-        )
+        // ステップ3: バックエンドにタスクを作成
+        generationProgress = "タスクを保存中..."
+        do {
+            if !appConfig.isTestMode {
+                let accessToken = keychainHelper.getAccessToken()
+                let createdTask = try await trpcService.createProjectAndTask(
+                    projectName: taskText,
+                    taskName: taskText,
+                    accessToken: accessToken
+                )
+                print("✅ タスク保存成功: \(createdTask.id)")
 
-        // カードスタックの先頭に追加
-        cards.insert(taskCard, at: 0)
-        currentCard = taskCard
+                // バックエンドから返されたタスクに画像を追加
+                let taskCard = Card(
+                    id: createdTask.id,
+                    imageURL: imagePath,
+                    taskText: taskText,
+                    emoji: emoji,
+                    title: createdTask.title,
+                    userId: createdTask.userId,
+                    projectId: createdTask.projectId,
+                    name: createdTask.name,
+                    date: createdTask.date,
+                    status: createdTask.status,
+                    priority: createdTask.priority,
+                    parentId: createdTask.parentId
+                )
 
-        print("✅ タスクカード作成完了: \(taskText)")
+                // カードスタックの先頭に追加
+                cards.insert(taskCard, at: 0)
+                currentCard = taskCard
+            } else {
+                // テストモード: ローカルのみ
+                let taskCard = Card(
+                    id: UUID().uuidString,
+                    imageURL: imagePath,
+                    taskText: taskText,
+                    emoji: emoji,
+                    title: taskText
+                )
+                cards.insert(taskCard, at: 0)
+                currentCard = taskCard
+                print("🧪 [Test Mode] タスクカード作成: \(taskText)")
+            }
+
+            print("✅ タスクカード作成完了: \(taskText)")
+        } catch {
+            errorMessage = "タスクの保存に失敗しました: \(error.localizedDescription)"
+            print("❌ タスク保存失敗: \(error)")
+        }
 
         isGeneratingCard = false
         generationProgress = ""
