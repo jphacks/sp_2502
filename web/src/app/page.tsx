@@ -5,34 +5,36 @@ import { FaAngleDown } from "react-icons/fa6";
 import CardList from "@/app/_components/cards-list";
 import { HydrateClient } from "@/trpc/server";
 
-  export type CardListItemType = {
-    id: number;
-    taskname: string;
-    pretask: string[];
-  };
+export type CardListItemType = {
+  id: number;
+  title: string;
+  description: string;
+};
+
+export type SelectedItemType = {
+  id: number;
+  taskname: string;
+  pretask: string[];
+};
 
 export default function Home() {
   const listA = [
     { id: 1, title: "カード1", description: "最初のカード" },
     { id: 2, title: "カード2", description: "2番目のカード" },
     { id: 3, title: "カード3", description: "3番目のカード" },
-    { id: 1, title: "カード1", description: "最初のカード" },
-    { id: 2, title: "カード2", description: "2番目のカード" },
-    { id: 3, title: "カード3", description: "3番目のカード" },
-    { id: 1, title: "カード1", description: "最初のカード" },
-    { id: 2, title: "カード2", description: "2番目のカード" },
-    { id: 3, title: "カード3", description: "3番目のカード" },
-  ];
-  const listB:CardListItemType[] = [
-    { id: 1, taskname: "キーワード決定", pretask: ["aaa", "bbb", "ccc"] },
-    { id: 2, taskname: "参考文献探し" , pretask: ["aaa", "bbb", "ccc"]},
-    { id: 3, taskname: "心理学レポート" , pretask: ["aaa", "bbb", "ccc"]},
+    { id: 4, title: "カード1", description: "最初のカード" },
+    { id: 5, title: "カード2", description: "2番目のカード" },
+    { id: 6, title: "カード3", description: "3番目のカード" },
+    { id: 7, title: "カード1", description: "最初のカード" },
+    { id: 8, title: "カード2", description: "2番目のカード" },
+    { id: 9, title: "カード3", description: "3番目のカード" },
   ];
 
-  const [selectedItem, setSelectedItem] = useState<ItemType>({
+  const [selectedItem, setSelectedItem] = useState<SelectedItemType>({
     id: 0,
-    title:
-  })
+    taskname: "",
+    pretask: [],
+  });
 
   return (
     <HydrateClient>
@@ -58,19 +60,19 @@ export default function Home() {
               alignItems="center"
               justifyContent="center">
               <Text fontSize="32px" color="#FFBE45">
-                キーワード探し
+                {selectedItem.taskname}
               </Text>
             </Box>
 
             <Box flex="1" gap="0px" w="full" minH="50px" overflowY="auto">
-              {listB.map(item => (
+              {selectedItem.pretask.map(item => (
                 <VStack
-                  key={item.id}
+                  key={item}
                   fontSize="40px"
                   color="#000000"
                   align="center">
                   <FaAngleDown />
-                  {item.taskname}
+                  {item}
                 </VStack>
               ))}
             </Box>

@@ -2,6 +2,8 @@
 
 import { Wrap, WrapItem, Card, CardBody, Text } from "@chakra-ui/react";
 
+import type { CardListItemType } from "../page";
+
 // export default function CardList({ items }) {
 //   return (
 //     <SimpleGrid columns={[1, 2, 3]} gap={2}>
@@ -19,18 +21,12 @@ import { Wrap, WrapItem, Card, CardBody, Text } from "@chakra-ui/react";
 //   );
 // }
 
-type Item = {
-  id: number;
-  taskname: string;
-  pretask: string[];
-};
-
 type CardListProps = {
-  items: Item[];
-  onSelect: (pretask: string[]) => void;
+  items: CardListItemType[];
+  onSelect: (id: number) => void;
 };
 
-export default function CardList({ items }: CardListProps) {
+export default function CardList({ items, onSelect }: CardListProps) {
   return (
     <Wrap gap="40px" justifyContent="center">
       {items.map(item => (
