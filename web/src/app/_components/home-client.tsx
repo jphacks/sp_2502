@@ -1,6 +1,14 @@
 "use client";
 
-import { Box, HStack, VStack, Text, Link, Image } from "@chakra-ui/react";
+import {
+  Box,
+  HStack,
+  VStack,
+  Text,
+  Link,
+  Image,
+  Button,
+} from "@chakra-ui/react";
 import { useState } from "react";
 import { FaAngleDown } from "react-icons/fa6";
 
@@ -17,6 +25,8 @@ type HomeClientProps = {
 export const HomeClient = ({ session }: HomeClientProps) => {
   const [taskSelect, setTaskSelect] = useState<TaskDTO | null>(null);
 
+  const utils = api.useUtils();
+
   // アクティブタスクの一覧を取得
   const { data: activeTasksData } = api.task.activeList.useQuery({
     order: "desc",
@@ -28,6 +38,9 @@ export const HomeClient = ({ session }: HomeClientProps) => {
     { enabled: !!taskSelect }, // taskSelectがnullでない時のみクエリ実行
   );
 
+  // タスク完了処理のmutation
+  const completeTask = api.task.complete.useMutation();
+
   const handleSelectTask = (id: string) => {
     const task = activeTasksData?.tasks.find(t => t.id === id);
     if (task) {
@@ -35,15 +48,35 @@ export const HomeClient = ({ session }: HomeClientProps) => {
     }
   };
 
+  const handleTaskComplete = () => {
+    if (!taskSelect) return;
+
+    completeTask.mutate(
+      {
+        taskId: taskSelect.id,
+      },
+      {
+        onSuccess: data => {
+          // サーバーから次のタスクとアクティブタスク一覧を受け取る
+          setTaskSelect(data.nextTask);
+          // アクティブタスク一覧を更新
+          void utils.task.activeList.invalidate();
+        },
+      },
+    );
+  };
+
   return (
     <HStack w="100vw" h="100vh" gap="0px" bg="white" overflow="hidden">
       <Box bg="#EEEEEE" w="300px" minW="330px" h="full">
         <VStack h="full" ml="20px">
-          <Box
+          <Button
             mt="33px"
             w="203px"
             h="192px"
             border="none"
+            bg="transparent"
+            onClick={handleTaskComplete}
             bgImage="url('/images/check-2.svg')"
           />
           <Box
