@@ -4,7 +4,6 @@ import Combine
 
 class CardViewModel: ObservableObject {
     @Published var currentCard: Card?
-    @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var isGeneratingCard = false
     @Published var generationProgress: String = "" // 生成プロセスの進行状況を表示
@@ -20,60 +19,6 @@ class CardViewModel: ObservableObject {
         let startIndex = 1
         let endIndex = min(startIndex + count, cards.count)
         return Array(cards[startIndex..<endIndex])
-    }
-
-    @MainActor
-    func loadCards() async {
-        isLoading = true
-        errorMessage = nil
-
-        guard let accessToken = keychainHelper.getAccessToken() else {
-            errorMessage = "アクセストークンが見つかりません。ログインしてください。"
-            isLoading = false
-            return
-        }
-
-        let fetchedCards = await tRPCService.shared.fetchActiveTasks(token: accessToken)
-        print("📥 APIから\(fetchedCards.count)件のタスクを取得しました")
-
-        // 画像生成
-        await generateImagesForCards(fetchedCards)
-
-        cards = fetchedCards
-        currentCard = cards.first
-
-        isLoading = false
-    }
-
-    /// APIから取得したカードに画像を生成する
-    @MainActor
-    private func generateImagesForCards(_ cardsToUpdate: [Card]) async {
-        for i in 0..<cardsToUpdate.count {
-            let card = cardsToUpdate[i]
-            // 画像URLが空または存在しない場合は生成
-            if card.imageURL.isEmpty {
-                let taskName = card.displayName
-                let emoji = emojiSelector.selectEmojiWithPriority(for: taskName)
-                if let imagePath = await imageGenerator.generateTaskImage(taskText: taskName, emoji: emoji) {
-                    // imageURLを更新
-                    let updatedCard = Card(
-                        id: card.id,
-                        imageURL: imagePath,
-                        taskText: taskName,
-                        emoji: emoji,
-                        title: card.title,
-                        userId: card.userId,
-                        projectId: card.projectId,
-                        name: card.name,
-                        date: card.date,
-                        status: card.status,
-                        priority: card.priority,
-                        parentId: card.parentId
-                    )
-                    cards[i] = updatedCard
-                }
-            }
-        }
     }
 
     @MainActor
@@ -103,6 +48,8 @@ class CardViewModel: ObservableObject {
                 let result = await tRPCService.shared.splitTaskAI(taskId: card.id, token: accessToken)
                 print("✂️ [API Mode] タスク分割成功:")
                 print(result)
+                
+                
 
                 // 現在のカードを削除
                 moveToNextCard()
@@ -133,13 +80,8 @@ class CardViewModel: ObservableObject {
             cards.remove(at: index)
         }
 
-        if cards.isEmpty {
-            Task {
-                await loadCards()
-            }
-        } else {
-            currentCard = cards.first
-        }
+        // 次のカードを設定（空の場合はnil）
+        currentCard = cards.first
     }
 
     @MainActor
@@ -168,11 +110,27 @@ class CardViewModel: ObservableObject {
         isGeneratingCard = true
         errorMessage = nil
 
-        // ステップ1: 絵文字を選択
+        // ステップ1: バックエンドにタスクを作成
+        generationProgress = "タスクを保存中..."
+        guard let accessToken = keychainHelper.getAccessToken() else {
+            errorMessage = "アクセストークンが見つかりません。ログインしてください。"
+            isGeneratingCard = false
+            generationProgress = ""
+            return
+        }
+
+        guard var newCard = await tRPCService.shared.projectCreateTask(projectName: taskText, TaskName: taskText, token: accessToken) else {
+            errorMessage = "タスクの作成に失敗しました。"
+            isGeneratingCard = false
+            generationProgress = ""
+            return
+        }
+
+        // ステップ2: 絵文字を選択
         generationProgress = "絵文字を選択中..."
         let emoji = emojiSelector.selectEmojiWithPriority(for: taskText)
 
-        // ステップ2: 翻訳と画像を生成
+        // ステップ3: 画像を生成
         generationProgress = "画像を生成中..."
         print("🎨 画像生成開始: \(taskText)")
         guard let imagePath = await imageGenerator.generateTaskImage(taskText: taskText, emoji: emoji) else {
@@ -184,32 +142,24 @@ class CardViewModel: ObservableObject {
         }
         print("✅ 画像生成成功: \(imagePath)")
 
-        // ステップ3: バックエンドにタスクを作成
-        generationProgress = "タスクを保存中..."
-        guard let accessToken = keychainHelper.getAccessToken() else {
-            errorMessage = "アクセストークンが見つかりません。ログインしてください。"
-            isGeneratingCard = false
-            generationProgress = ""
-            return
-        }
-
-        guard let taskId = await tRPCService.shared.projectCreateTask(projectName: taskText, TaskName: taskText, token: accessToken) else {
-            errorMessage = "タスクの作成に失敗しました。"
-            isGeneratingCard = false
-            generationProgress = ""
-            return
-        }
-
-        // ステップ4: 作成したタスクをカードスタックに追加
-        let newCard = Card(
-            id: taskId,
+        // ステップ4: 画像とemoji情報を追加してカードを更新
+        let cardWithImage = Card(
+            id: newCard.id,
             imageURL: imagePath,
             taskText: taskText,
             emoji: emoji,
-            title: taskText,
-            name: taskText
+            title: newCard.title,
+            userId: newCard.userId,
+            projectId: newCard.projectId,
+            name: newCard.name,
+            date: newCard.date,
+            status: newCard.status,
+            priority: newCard.priority,
+            parentId: newCard.parentId
         )
-        cards.insert(newCard, at: 0)
+
+        // ステップ5: カードスタックに追加
+        cards.insert(cardWithImage, at: 0)
         currentCard = cards.first
         print("✅ タスクカード追加成功: \(taskText)")
 

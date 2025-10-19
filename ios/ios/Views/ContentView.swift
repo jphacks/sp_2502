@@ -50,11 +50,7 @@ struct ContentView: View {
                     .position(x: geometry.size.width - 40, y: geometry.size.height - 60)
                     .opacity(0.4)
 
-                if viewModel.isLoading {
-                    ProgressView("Loading cards...")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                } else if let errorMessage = viewModel.errorMessage {
+                if let errorMessage = viewModel.errorMessage {
                     VStack(spacing: 20) {
                         Image(systemName: "exclamationmark.triangle")
                             .font(.system(size: 60))
@@ -64,12 +60,6 @@ struct ContentView: View {
                             .foregroundColor(.white)
                             .multilineTextAlignment(.center)
                             .padding()
-                        Button("Retry") {
-                            Task {
-                                await viewModel.loadCards()
-                            }
-                        }
-                        .buttonStyle(.borderedProminent)
                     }
                 } else if let card = viewModel.currentCard {
                     // カードスタック表示（中央に大きく配置）
@@ -128,13 +118,18 @@ struct ContentView: View {
                         }
                     }
                 } else {
-                    VStack(spacing: 20) {
-                        Image(systemName: "photo.on.rectangle.angled")
-                            .font(.system(size: 60))
+                    VStack(spacing: 30) {
+                        Image(systemName: "mic.fill")
+                            .font(.system(size: 80))
                             .foregroundColor(.white)
-                        Text("No more cards")
-                            .font(.headline)
+                        Text("マイク入力でタスクを追加")
+                            .font(.system(size: 24, weight: .semibold))
                             .foregroundColor(.white)
+                            .multilineTextAlignment(.center)
+                        Text("下部のマイクボタンを長押しして\n音声でタスクを入力してください")
+                            .font(.system(size: 16))
+                            .foregroundColor(.white.opacity(0.8))
+                            .multilineTextAlignment(.center)
                     }
                 }
 
@@ -175,8 +170,6 @@ struct ContentView: View {
             }
         }
         .task {
-            await viewModel.loadCards()
-
             speechViewModel.onRecognitionCompleted = { recognizedText in
                 Task { @MainActor in
                     await viewModel.addTaskCard(taskText: recognizedText)
