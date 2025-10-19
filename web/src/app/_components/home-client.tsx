@@ -15,38 +15,23 @@ type HomeClientProps = {
 };
 
 export const HomeClient = ({ session }: HomeClientProps) => {
-  const [parentTasks, setParentTasks] = useState<TaskDTO[] | null>(null);
   const [taskSelect, setTaskSelect] = useState<TaskDTO | null>(null);
 
-  // アクティブタスクの一覧を取得（モックデータ）
+  // アクティブタスクの一覧を取得
   const { data: activeTasksData } = api.task.activeList.useQuery({
     order: "desc",
   });
 
-  // タスク選択時に親タスク情報を取得（モック実装）
-  // NOTE: task.selectエンドポイントは未実装のため、モックデータを使用
-  const handleSetParentTasks = (childTask: TaskDTO) => {
-    try {
-      const { data: taskData } = api.task.select.useQuery({
-        task_id: childTask.id,
-      });
-
-      if (!taskData) {
-        console.error("タスクデータが取得できませんでした");
-        return;
-      }
-
-      setParentTasks(taskData);
-    } catch (error) {
-      console.error("タスクの取得に失敗しました:", error);
-    }
-  };
+  // 選択されたタスクの親タスク情報を自動取得
+  const { data: parentTasks } = api.task.select.useQuery(
+    { task_id: taskSelect?.id ?? "" },
+    { enabled: !!taskSelect }, // taskSelectがnullでない時のみクエリ実行
+  );
 
   const handleSelectTask = (id: string) => {
     const task = activeTasksData?.tasks.find(t => t.id === id);
     if (task) {
-      setTaskSelect(task);
-      handleSetParentTasks(task);
+      setTaskSelect(task); // これが変わると自動的に親タスクが取得される
     }
   };
 
