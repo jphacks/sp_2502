@@ -8,7 +8,7 @@ struct AuthView: View {
 
     var body: some View {
         Group {
-            if isAuthenticated {
+            if !isAuthenticated {
                 VStack {
                     ContentView()
                     Button("Fetch Notes") {
