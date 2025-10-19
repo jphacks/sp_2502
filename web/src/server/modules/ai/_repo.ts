@@ -16,7 +16,6 @@ import type { ProjectId, UserId } from "@/server/types/brand";
 import { type AppError, Errors } from "@/server/types/errors";
 import { type AsyncResult, Err, Ok } from "@/server/types/result";
 
-// P¿¹¯ný 
 export const insertChildTask = async (
   db: DBLike,
   values: {
@@ -55,7 +54,6 @@ export const insertChildTask = async (
   }
 };
 
-// ª¿¹¯keOP¿¹¯nô°
 export const updateChildTaskById = async (
   db: DBLike,
   key: {
@@ -98,7 +96,6 @@ export const updateChildTaskById = async (
   }
 };
 
-// ¿¹¯IDK‰×í¸§¯È’Ö—
 export const findProjectByTaskId = async (
   db: DBLike,
   taskId: TaskId,
@@ -122,7 +119,6 @@ export const findProjectByTaskId = async (
   }
 };
 
-// ×í¸§¯ÈIDkeO¿¹¯’Ö—
 export const findTasksByProjectId = async (
   db: DBLike,
   projectId: ProjectId,
@@ -140,7 +136,6 @@ export const findTasksByProjectId = async (
   }
 };
 
-// ¿¹¯IDK‰¿¹¯’Ö—
 export const findTaskById = async (
   db: DBLike,
   taskId: TaskId,

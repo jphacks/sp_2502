@@ -107,12 +107,12 @@ export const execute = async (
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4.1-mini",
       messages: [
         {
           role: "system",
           content:
-            'You are a task splitting assistant. Split the given task into two subtasks: first half and second half. Return ONLY valid JSON with the exact format: {"first_half": "string", "second_half": "string"}. Each task name must be 15 characters or less.',
+            'You are a task splitting assistant. As an AI, you are tasked with analyzing the request {{task}} and dividing the entire workflow into two primary sequential phases ("First Half" and "Second Half"). {{graph}} represents the complete workflow of the project, including {{task}}. Ensure that both first_half and second_half generate content that differs from {{graph}}. For first_half, describe the key phases of the initial work stages. For second_half, describe the remaining final stages of work required to complete the task. You must provide your response in the following JSON format and strictly adhere to the specified character limits: {"first_half": "[first_half (initial work phase). 15 characters or less]", "second_half": "[second_half (remaining final work phase to execute after first_half). 15 characters or less]"}',
         },
         {
           role: "user",
