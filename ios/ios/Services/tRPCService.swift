@@ -6,6 +6,14 @@
 //
 import Foundation
 
+enum tRPCError: Error {
+    case invalidURL
+    case invalidResponse
+    case networkError(Error)
+    case decodingError(Error)
+    case serverError(statusCode: Int)
+}
+
 final class tRPCService {
     static let shared = tRPCService()
     private init() {}
@@ -74,7 +82,73 @@ final class tRPCService {
         return any
     }
 
-    // MARK: - fetch使用例
+    // MARK: - Card API
+
+    /// カード一覧を取得
+    func fetchCards(accessToken: String? = nil) async throws -> [Card] {
+        var comp = URLComponents(string: "https://sp-2502.vercel.app/api/trpc/card.list")!
+        let inputObj: [String: Any] = ["json": [:]]
+        let inputData = try JSONSerialization.data(withJSONObject: inputObj)
+        comp.queryItems = [URLQueryItem(name: "input", value: String(data: inputData, encoding: .utf8)!)]
+
+        var req = URLRequest(url: comp.url!)
+        req.httpMethod = "GET"
+        if let token = accessToken {
+            req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        req.setValue("application/json", forHTTPHeaderField: "Accept")
+
+        let (data, response) = try await URLSession.shared.data(for: req)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw tRPCError.invalidResponse
+        }
+
+        guard (200...299).contains(httpResponse.statusCode) else {
+            throw tRPCError.serverError(statusCode: httpResponse.statusCode)
+        }
+
+        // SuperJSON から plain JSON に変換
+        let plain = try superJSONToPlainJSONData(data, unwrapSingleArray: true)
+
+        // デコード
+        let cards = try decoder.decode([Card].self, from: plain)
+        return cards
+    }
+
+    /// スワイプアクションを送信
+    func sendSwipeAction(cardId: String, action: String, accessToken: String? = nil) async throws {
+        var comp = URLComponents(string: "https://sp-2502.vercel.app/api/trpc/card.action")!
+        let inputObj: [String: Any] = [
+            "json": [
+                "cardId": cardId,
+                "action": action
+            ]
+        ]
+        let inputData = try JSONSerialization.data(withJSONObject: inputObj)
+        comp.queryItems = [URLQueryItem(name: "input", value: String(data: inputData, encoding: .utf8)!)]
+
+        var req = URLRequest(url: comp.url!)
+        req.httpMethod = "POST"
+        if let token = accessToken {
+            req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue("application/json", forHTTPHeaderField: "Accept")
+
+        let (_, response) = try await URLSession.shared.data(for: req)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw tRPCError.invalidResponse
+        }
+
+        guard (200...299).contains(httpResponse.statusCode) else {
+            throw tRPCError.serverError(statusCode: httpResponse.statusCode)
+        }
+    }
+
+    // MARK: - Sample Code (Note API)
+
     struct Note: Decodable {
         let id: String
         let userId: String

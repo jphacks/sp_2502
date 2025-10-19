@@ -15,6 +15,10 @@ ios/
 ├── iosApp.swift                          # アプリエントリーポイント
 ├── ContentView.swift                      # メインView（カードスタック表示）
 ├── AppConfiguration.swift                 # テストモード/APIモード切り替え
+├── Constants/
+│   └── CardConstants.swift               # カード関連定数（レイアウト/色/影/スワイプ設定）
+├── Helper/
+│   └── KeychainHelper.swift              # Keychainラッパー（アクセストークン管理）
 ├── Models/
 │   ├── CardModel.swift                   # カードデータモデル
 │   └── UserModel.swift                   # ユーザーモデル
@@ -23,12 +27,15 @@ ios/
 │   └── SpeechRecognizerViewModel.swift   # 音声認識・音声入力管理
 ├── Views/
 │   ├── AuthView.swift                    # Auth0認証UI
-│   ├── CardView.swift                    # カード表示UI
-│   ├── SwipeableCardView.swift           # スワイプジェスチャー処理
-│   └── ProfileView.swift                 # ユーザープロフィール
+│   ├── ProfileView.swift                 # ユーザープロフィール
+│   └── Card/
+│       ├── CardView.swift                # 通常カード表示UI
+│       ├── TaskCardView.swift            # タスクカード表示UI
+│       └── SwipeableCardView.swift       # スワイプジェスチャー処理
 ├── Services/
-│   ├── APIService.swift                  # API通信層
+│   ├── tRPCService.swift                 # tRPC/SuperJSON対応API通信層
 │   ├── ImageGeneratorService.swift       # 画像生成（ImagePlayground/CoreGraphics）
+│   ├── TranslationService.swift          # 翻訳サービス（Translation API/辞書ベース）
 │   ├── EmojiSelectorService.swift        # 絵文字選択ロジック
 │   └── MockDataProvider.swift            # テストデータ提供
 └── Assets.xcassets/                       # 画像・アイコンアセット
@@ -73,38 +80,61 @@ xcodebuild -project ios.xcodeproj -scheme ios -configuration Debug -sdk iphonesi
 - **非同期処理**: async/await
 - **リアクティブ**: Combine
 - **ネットワーク**: URLSession (標準ライブラリ)
+- **API通信**: tRPC + SuperJSON形式
 - **最小デプロイメントターゲット**: iOS 18.0
 - **外部依存**:
   - Auth0.swift (SPM): 認証機能（バージョン 2.15.1+）
 - **システム機能**:
   - ImagePlayground API (iOS 18.4+): AI画像生成
+  - Translation Framework (iOS 18.0+): オンデバイス翻訳
   - Speech Framework: 音声認識
   - Core Graphics: フォールバック画像生成
+  - Keychain Services: セキュアなトークン保存
 
 ## 重要な実装パターン
 
 ### モード切り替え（`AppConfiguration`）
 
 - **テストモード** (`.test`): `MockDataProvider` からローカルデータを取得
-- **APIモード** (`.api`): `APIService` 経由でバックエンドAPIと通信
+- **APIモード** (`.api`): `tRPCService` 経由でバックエンドAPIと通信
 - `AppConfiguration.shared.currentMode` で切り替え（`CardViewModel` が参照）
 
-### API通信（`APIService`）
+### API通信（`tRPCService`）
 
-- **ベースURL**: `http://localhost:3304/api` (開発環境)
+**tRPCService（tRPC/SuperJSON対応）**:
+- **ベースURL**: `https://sp-2502.vercel.app/api/trpc`
 - **エンドポイント**:
-  - `GET /api/cards` - カード一覧取得
-  - `POST /api/cards/{cardId}/action` - スワイプアクション送信（body: `{"action": "delete"|"like"|"skip"}`）
-- **エラーハンドリング**: `APIError` enum で分類（invalidURL/networkError/decodingError/serverError）
-- 本番環境では `baseURL` を環境変数化すること
+  - `GET /api/trpc/card.list` - カード一覧取得
+  - `POST /api/trpc/card.action` - スワイプアクション送信（input: `{"cardId": "...", "action": "delete"|"like"|"cut"}`）
+  - `GET /api/trpc/note.list` - ノート一覧取得（サンプル）
+- SuperJSONレスポンスをplain JSONに変換してデコード
+  - `superJSONToPlainJSONData()` でネストされた `result.data.json` 構造を展開
+  - `decodeFromSuperJSON<T>()` で型安全にデコード
+- **認証**: `Authorization: Bearer {accessToken}` ヘッダーを使用
+  - アクセストークンは `KeychainHelper` から取得
+  - 未認証の場合は `nil` を渡す（オプショナル）
+- **エラーハンドリング**: `tRPCError` enum で分類（invalidURL/invalidResponse/networkError/decodingError/serverError）
+- **リクエストフォーマット**:
+  - GETリクエスト: クエリパラメータ `input` に JSON エンコードされたオブジェクトを渡す
+  - 例: `?input={"json":{}}`
+- **レスポンスフォーマット**: SuperJSON形式 → plain JSONに自動変換
 
-### 認証（Auth0）
+### 認証（Auth0 + Keychain）
 
+**Auth0統合**:
 - `AuthView` がアプリのエントリーポイント（`iosApp.swift` で参照）
 - Web認証フロー: `Auth0.webAuth().useHTTPS().start()`
 - ログアウト: `Auth0.webAuth().useHTTPS().clearSession()`
 - IDトークンから `User` モデルを生成
 - **現在は認証フローがコメントアウトされ、直接 `ContentView` を表示**（`AuthView.swift:13-20`）
+
+**KeychainHelper**:
+- アクセストークンの安全な保存・取得・削除を提供
+- `saveAccessToken(_:)`: トークンを Keychain に保存
+- `getAccessToken()`: トークンを Keychain から取得
+- `deleteAccessToken()`: トークンを削除（ログアウト時に使用）
+- シングルトンパターン（`KeychainHelper.shared`）
+- Service ID は Bundle ID をデフォルト使用
 
 ### 音声認識（`SpeechRecognizerViewModel`）
 
@@ -118,9 +148,22 @@ xcodebuild -project ios.xcodeproj -scheme ios -configuration Debug -sdk iphonesi
 - **iOS 18.4+**: ImagePlayground API (`ImageCreator`) を使用
   - スタイル: `.illustration`, `.sketch`, `.animation` をタスク内容に応じて選択
   - プロンプト生成: タスクテキストからキーワード抽出してプロンプトを構築
+  - `TranslationService` を使用して日本語タスクを英語に翻訳してからプロンプト生成
 - **フォールバック**: Core Graphics で装飾的なグラデーション画像を生成
   - タスク内容に応じた色・装飾（数学記号、音符、グラフなど）
 - **キャッシュ**: 画像は `cachesDirectory` に保存（`task_{UUID}.png`）
+
+### 翻訳（`TranslationService`）
+
+- **iOS 18.0+**: Translation フレームワークでオンデバイス翻訳
+  - `translateToEnglish(japaneseText:)` async メソッドで日本語→英語翻訳
+  - `LanguageAvailability` で翻訳モデルのインストール状態を確認（`.installed` が必要）
+  - `TranslationSession` でプログラマティックに翻訳（UIなし）
+- **フォールバック**: 辞書ベースの簡易翻訳
+  - `basicTranslateToEnglish()` で90以上のキーワードマッピング
+  - 学習、仕事、運動、食事、音楽、健康など幅広いカテゴリをカバー
+- **出力フォーマット**: 英字とスペースのみに制限（`removeNonEnglishCharacters()`）
+- ImagePlayground API のプロンプト生成で使用
 
 ### 状態管理（`CardViewModel`）
 
@@ -146,6 +189,25 @@ xcodebuild -project ios.xcodeproj -scheme ios -configuration Debug -sdk iphonesi
 - ViewModel: `*ViewModel.swift`
 - Model: `*Model.swift`
 - Service: `*Service.swift`
+- Helper: `*Helper.swift`
+- Constants: `*Constants.swift`
+
+### UI構造の分離
+
+- **CardView**: 通常のAPIから取得したカード表示（画像URL、タイトル、説明を表示）
+- **TaskCardView**: 音声入力で作成したタスクカード専用（ローカル画像パス、絵文字を表示）
+  - `loadImageFromPath()` でキャッシュされた画像をファイルシステムから読み込む
+  - 背景色は `CardConstants.Colors.taskCardBackground`
+- **SwipeableCardView**: 上記2種類のカードを包含し、スワイプジェスチャーを処理
+
+### 定数管理（`CardConstants`）
+
+UI関連の値を一元管理:
+- **Layout**: アスペクト比、角丸、パディング、フレームサイズ
+- **Colors**: グラデーション定義（外側カード、内側カード、ゴールドフレーム、テキストオーバーレイ）
+- **Shadow**: 影の設定（色、半径、オフセット）
+- **Typography**: フォントサイズ、ウェイト、色
+- **Swipe**: スワイプ閾値、回転係数、アニメーション時間、方向別の設定（色、アイコン、テキスト）
 
 ## データフロー
 
@@ -155,14 +217,14 @@ xcodebuild -project ios.xcodeproj -scheme ios -configuration Debug -sdk iphonesi
 2. `ContentView` が `CardViewModel` と `SpeechRecognizerViewModel` を `@StateObject` として所有
 3. `CardViewModel.loadCards()` が `AppConfiguration` に応じてデータ取得:
    - テストモード: `MockDataProvider.getTestCards()`
-   - APIモード: `APIService.shared.fetchCards()`
+   - APIモード: `tRPCService.fetchCards(accessToken:)` でtRPCサーバーから取得
+     - アクセストークンは `KeychainHelper.getAccessToken()` から取得
 4. カードスタック表示: 現在のカード + 次の2枚をZStackで重ねて表示
 5. ユーザーがスワイプ → `SwipeableCardView` がジェスチャー検出
 6. `CardViewModel.handleSwipe(direction:)` がアクションを処理:
-   - APIモードの場合: `APIService` にアクション送信
-   - `swipeHistory` に記録
+   - APIモードの場合: `tRPCService.sendSwipeAction(cardId:action:accessToken:)` にアクション送信
    - 次カード表示 or 再読込
-7. Undo時は `swipeHistory` から復元
+7. カードが空になると自動的に `loadCards()` を再実行
 
 ### 音声入力フロー
 
@@ -172,7 +234,8 @@ xcodebuild -project ios.xcodeproj -scheme ios -configuration Debug -sdk iphonesi
 4. `onRecognitionCompleted` コールバックで認識テキストを取得
 5. `CardViewModel.addTaskCard(taskText:)` が呼ばれる:
    - `EmojiSelectorService` でタスクに合った絵文字を選択
-   - `ImageGeneratorService` で画像生成（ImagePlayground API → フォールバック）
+   - `TranslationService` で日本語タスクを英語に翻訳（iOS 18+ Translation API → 辞書ベース）
+   - `ImageGeneratorService` で翻訳後のテキストから画像生成（ImagePlayground API → Core Graphics フォールバック）
    - 新しい `Card` を作成してカードスタックの先頭に挿入
 
 ## Xcodeプロジェクト設定
@@ -194,6 +257,14 @@ xcodebuild -project ios.xcodeproj -scheme ios -configuration Debug -sdk iphonesi
 - 必ずフォールバック処理（Core Graphics）を用意すること
 - シミュレーターでは動作しない可能性があるため、実機テスト推奨
 
+### Translation API
+
+- iOS 18.0+ で利用可能（`canImport(Translation)` で判定）
+- 初回使用時に翻訳モデルのダウンロードが必要な場合がある
+- `LanguageAvailability.status(from:to:)` で `.installed` を確認
+- モデル未インストール時は辞書ベース翻訳にフォールバック
+- 出力は必ず英字とスペースのみに制限（ImagePlayground API の制約対応）
+
 ### 音声認識
 
 - 初回起動時に権限リクエストが表示される
@@ -203,8 +274,10 @@ xcodebuild -project ios.xcodeproj -scheme ios -configuration Debug -sdk iphonesi
 ### エラー処理
 
 - ネットワークエラーは `errorMessage` に格納し、UI に Retry ボタンを表示
-- デコードエラーは `APIError.decodingError` でキャッチし、モデル定義を確認
+- デコードエラーは `tRPCError.decodingError` でキャッチし、モデル定義を確認
+- SuperJSON変換エラーは `superJSONToPlainJSONData()` 内で処理
 - 画像生成失敗時は必ずフォールバックを実行
+- 認証エラー（401）時は `KeychainHelper` でトークンを確認
 
 ### パフォーマンス
 
@@ -218,6 +291,8 @@ xcodebuild -project ios.xcodeproj -scheme ios -configuration Debug -sdk iphonesi
 - `@Published` は View が監視するプロパティのみ使用
 - async/await を使用し、completion handler は避ける
 - シングルトンサービスは `static let shared` パターンを使用
+- UI定数は `CardConstants` に集約（ハードコーディングを避ける）
+- セキュアな情報は `KeychainHelper` を使用（UserDefaults は非推奨）
 
 ## UI実装の詳細
 
@@ -246,3 +321,5 @@ xcodebuild -project ios.xcodeproj -scheme ios -configuration Debug -sdk iphonesi
 
 - **メインブランチ**: `main`
 - PR は `main` ブランチに対して作成
+- RESTful API は使わず、 tRPCサーバーのみを使います。\
+該当する RESTful API へのリクエスト部分も削除し、 tRPC のリクエストを使うようにしてください。

@@ -10,11 +10,12 @@ class CardViewModel: ObservableObject {
     @Published var generationProgress: String = "" // 生成プロセスの進行状況を表示
 
     private var cards: [Card] = []
-    private let apiService = APIService.shared
+    private let trpcService = tRPCService.shared
     private let mockDataProvider = MockDataProvider.shared
     private let appConfig = AppConfiguration.shared
     private let imageGenerator = ImageGeneratorService.shared
     private let emojiSelector = EmojiSelectorService.shared
+    private let keychainHelper = KeychainHelper.shared
 
     // カードスタック表示用
     func getUpcomingCards(count: Int = 2) -> [Card] {
@@ -34,7 +35,9 @@ class CardViewModel: ObservableObject {
                 cards = try await mockDataProvider.fetchCards()
                 print("🧪 [Test Mode] Loaded \(cards.count) mock cards")
             } else {
-                cards = try await apiService.fetchCards()
+                let accessToken = keychainHelper.getAccessToken()
+                cards = try await trpcService.fetchCards(accessToken: accessToken)
+                print("🌐 [API Mode] Loaded \(cards.count) cards from tRPC")
             }
             currentCard = cards.first
         } catch {
@@ -64,8 +67,11 @@ class CardViewModel: ObservableObject {
             do {
                 if appConfig.isTestMode {
                     try await mockDataProvider.sendSwipeAction(cardId: card.id, action: action)
+                    print("🧪 [Test Mode] Sent action: \(action) for card: \(card.id)")
                 } else {
-                    try await apiService.sendSwipeAction(cardId: card.id, action: action)
+                    let accessToken = keychainHelper.getAccessToken()
+                    try await trpcService.sendSwipeAction(cardId: card.id, action: action, accessToken: accessToken)
+                    print("🌐 [API Mode] Sent action: \(action) for card: \(card.id)")
                 }
             } catch {
                 errorMessage = "Failed to send action: \(error.localizedDescription)"
