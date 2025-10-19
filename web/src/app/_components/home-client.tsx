@@ -75,11 +75,12 @@ export const HomeClient = ({ session }: HomeClientProps) => {
             ))}
           </Box>
 
-          <Box
+          <Link
             mt="10px"
             bottom="0px"
             w="277px"
             h="79px"
+            href="/auth/logout"
             bg="#FFBE45"
             borderTopRadius="15px"
             borderBottomRadius="0"
@@ -89,7 +90,7 @@ export const HomeClient = ({ session }: HomeClientProps) => {
             <Text fontSize="40px" color="#000000">
               ログアウト
             </Text>
-          </Box>
+          </Link>
         </VStack>
       </Box>
       <Box
