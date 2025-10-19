@@ -326,6 +326,263 @@ export const createNote = protectedProcedure
 
 ---
 
+## API エンドポイントリファレンス
+
+### 利用可能なエンドポイント一覧
+
+| エンドポイント | メソッド | 用途 | 認証必須 |
+|---|---|---|---|
+| `note.create` | mutation | ノート作成 | ✅ |
+| `note.list` | query | ノート一覧取得 | ✅ |
+| `note.update` | mutation | ノート更新 | ✅ |
+| `note.delete` | mutation | ノート削除 | ✅ |
+| `task.activeList` | query | アクティブタスク一覧 | ✅ |
+| `task.projectCreate` | mutation | プロジェクト+タスク作成 | ✅ |
+| `task.delete` | mutation | タスク削除 | ✅ |
+| `ai.splitTask` | mutation | タスク分割(AI) | ✅ |
+
+### エンドポイント詳細
+
+#### Note エンドポイント
+
+##### `note.create` - ノート作成
+
+```typescript
+// リクエスト
+{
+  title: string,    // 1-100文字
+  content: string   // 1-10000文字
+}
+
+// レスポンス (NoteDTO)
+{
+  id: string,           // NoteId Brand型
+  userId: string,       // UserId Brand型
+  title: string,
+  content: string,
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+##### `note.list` - ノート一覧取得
+
+```typescript
+// リクエスト (オプション)
+{
+  limit?: number,   // 1-100, デフォルト: 50
+  offset?: number   // 0以上, デフォルト: 0
+}
+
+// レスポンス
+{
+  notes: Array<NoteDTO>
+}
+```
+
+##### `note.update` - ノート更新
+
+```typescript
+// リクエスト
+{
+  noteId: string,
+  title?: string,    // 1-100文字
+  content?: string   // 1-10000文字
+}
+// 注意: titleまたはcontentの少なくとも1つが必須
+
+// レスポンス (NoteDTO)
+{
+  id: string,
+  userId: string,
+  title: string,
+  content: string,
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+##### `note.delete` - ノート削除
+
+```typescript
+// リクエスト
+{
+  noteId: string
+}
+
+// レスポンス (削除されたNoteDTO)
+{
+  id: string,
+  userId: string,
+  title: string,
+  content: string,
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+#### Task エンドポイント
+
+##### `task.activeList` - アクティブタスク一覧
+
+```typescript
+// リクエスト (オプション)
+{
+  order?: "desc" | "asc"  // デフォルト: "desc"
+}
+
+// レスポンス
+{
+  tasks: Array<TaskDTO>
+}
+
+// TaskDTO構造
+{
+  id: string,              // TaskId Brand型
+  userId: string,          // UserId Brand型
+  projectId: string,       // ProjectId Brand型
+  name: string,            // 1-100文字
+  createdAt: Date,
+  updatedAt: Date,
+  status: "unprocessed" | "active" | "completed" | "waiting",
+  date: Date | null,
+  priority: string | null,
+  parentId: string | null  // TaskId Brand型
+}
+```
+
+##### `task.projectCreate` - プロジェクト+タスク作成
+
+```typescript
+// リクエスト
+{
+  projectName: string,  // 1-255文字
+  taskName: string      // 1-255文字
+}
+
+// レスポンス (TaskDTO)
+{
+  id: string,
+  userId: string,
+  projectId: string,
+  name: string,
+  createdAt: Date,
+  updatedAt: Date,
+  status: "unprocessed" | "active" | "completed" | "waiting",
+  date: Date | null,
+  priority: string | null,
+  parentId: string | null
+}
+```
+
+##### `task.delete` - タスク削除
+
+```typescript
+// リクエスト
+{
+  taskId: string  // TaskId Brand型
+}
+
+// レスポンス (削除されたTaskDTO)
+{
+  id: string,
+  userId: string,
+  projectId: string,
+  name: string,
+  createdAt: Date,
+  updatedAt: Date,
+  status: "unprocessed" | "active" | "completed" | "waiting",
+  date: Date | null,
+  priority: string | null,
+  parentId: string | null
+}
+```
+
+#### AI エンドポイント
+
+##### `ai.splitTask` - タスク分割
+
+```typescript
+// リクエスト
+{
+  task_id: string  // TaskId
+}
+
+// レスポンス
+{
+  first_task_id: string,    // TaskId Brand型
+  first_task_name: string,
+  second_task_id: string,   // TaskId Brand型
+  second_task_name: string
+}
+```
+
+### フロントエンド実装例
+
+#### tRPCクライアントを使用した呼び出し例
+
+```typescript
+// ノート作成
+const createNote = api.note.create.useMutation();
+const handleCreateNote = async () => {
+  const result = await createNote.mutateAsync({
+    title: "新しいノート",
+    content: "ノートの内容"
+  });
+  console.log("作成されたノート:", result);
+};
+
+// ノート一覧取得
+const { data: notes, isLoading } = api.note.list.useQuery({
+  limit: 20,
+  offset: 0
+});
+
+// タスクのアクティブリスト取得
+const { data: tasks } = api.task.activeList.useQuery({
+  order: "desc"
+});
+
+// AI タスク分割
+const splitTask = api.ai.splitTask.useMutation();
+const handleSplitTask = async (taskId: string) => {
+  const result = await splitTask.mutateAsync({
+    task_id: taskId
+  });
+  console.log("分割されたタスク:", result);
+};
+```
+
+### 技術的な注意事項
+
+1. **Brand型**: すべてのID（UserId、NoteId、TaskId、ProjectId）は型安全性を確保するためにBrand型を使用
+2. **自動付与**: `userId`は認証コンテキストから自動的に付与される（クライアントから送信不要）
+3. **SuperJSON**: Date型は自動的にシリアライズ/デシリアライズされる
+4. **認証**: すべてのエンドポイントは`protectedProcedure`を使用し、Auth0認証が必須
+5. **エラーハンドリング**: `Result<T, AppError>`パターンを使用、エラーはTRPCErrorに変換される
+6. **バリデーション**: Zodスキーマによる厳格な入力検証
+7. **トランザクション**: 複数のDB操作は自動的にトランザクション内で実行される
+
+### モジュール構成
+
+各エンドポイントは以下のファイル構成を持つ：
+
+```
+src/server/modules/{domain}/{action}/
+├── contract.ts         # I/Oスキーマ定義
+├── service.ts          # ビジネスロジック
+└── endpoint.trpc.ts    # tRPCエンドポイント定義
+```
+
+共有リソース：
+```
+src/server/modules/{domain}/
+├── _dto.ts             # データ変換オブジェクト
+└── _repo.ts            # リポジトリ（データベース操作）
+```
+
+---
+
 ## 技術設定
 
 ### エラーハンドリング

@@ -102,3 +102,24 @@ export const insertFirstTask = async (
     return Err(Errors.infraDb("DB_ERROR", e));
   }
 };
+
+export const deleteTask = async (
+  db: DBLike,
+  values: {
+    taskId: string;
+    userId: UserId;
+  },
+): AsyncResult<SelectTask, AppError> => {
+  try {
+    const [deleted] = await db
+      .delete(tasks)
+      .where(and(eq(tasks.id, values.taskId), eq(tasks.userId, values.userId)))
+      .returning();
+    if (!deleted) {
+      return Err(Errors.notFound());
+    }
+    return Ok(deleted);
+  } catch (e) {
+    return Err(Errors.infraDb("DB_ERROR", e));
+  }
+};
