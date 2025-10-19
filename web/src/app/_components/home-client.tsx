@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, HStack, VStack, Text, Link } from "@chakra-ui/react";
+import { Box, HStack, VStack, Text, Link, Image } from "@chakra-ui/react";
 import { useState } from "react";
 import { FaAngleDown } from "react-icons/fa6";
 
@@ -104,13 +104,20 @@ export const HomeClient = ({ session }: HomeClientProps) => {
           {/* 認証バー */}
           <HStack
             w="100%"
-            justifyContent="flex-end"
-            px={4}
+            justifyContent="start"
+            px={3}
             py={2}
             bg="rgba(0,0,0,0.2)"
             borderRadius="8px">
-            {session?.user ? (
+            {session?.user && (
               <HStack gap={3} fontSize="14px" color="white">
+                <Image
+                  src={session.user.picture ?? "/images/default-user.png"}
+                  alt="User Avatar"
+                  width="30px"
+                  height="30px"
+                  rounded="full"
+                />
                 <Text opacity={0.8}>
                   {session.user.name ?? session.user.email ?? "ユーザー"}
                 </Text>
@@ -118,14 +125,6 @@ export const HomeClient = ({ session }: HomeClientProps) => {
                   ログアウト
                 </Link>
               </HStack>
-            ) : (
-              <Link
-                href="/auth/login"
-                fontSize="14px"
-                color="#FFBE45"
-                opacity={0.9}>
-                ログイン
-              </Link>
             )}
           </HStack>
 
