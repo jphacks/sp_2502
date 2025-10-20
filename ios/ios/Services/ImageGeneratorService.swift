@@ -220,6 +220,7 @@ class ImageGeneratorService {
     }
 
     /// Core Graphicsを使用した画像生成（フォールバック）
+    /// 背景とデコレーションのみを生成（絵文字とテキストはTaskCardViewとCardViewで表示）
     private func generateWithCoreGraphics(taskText: String, emoji: String) async -> String? {
         let size = CGSize(width: 400, height: 400)
         let gradientColors = selectGradientColors(for: taskText)
@@ -229,8 +230,9 @@ class ImageGeneratorService {
 
             drawGradientBackground(in: cgContext, size: size, colors: gradientColors)
             drawTaskSpecificDecorations(for: taskText, in: cgContext, size: size)
-            drawEmoji(emoji, in: cgContext, size: size)
-            drawTaskText(taskText, in: cgContext, size: size)
+            // 絵文字とタスクテキストはTaskCardViewとCardViewで表示するため、ここでは描画しない
+            // drawEmoji(emoji, in: cgContext, size: size)
+            // drawTaskText(taskText, in: cgContext, size: size)
             drawDecorations(in: cgContext, size: size)
         }
 

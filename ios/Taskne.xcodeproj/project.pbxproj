@@ -11,16 +11,16 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		1090E0CF2EA371F400C92785 /* ios.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ios.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1090E0CF2EA371F400C92785 /* Taskne.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Taskne.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		98E3FC9C2EA4785B00CAB088 /* Exceptions for "ios" folder in "ios" target */ = {
+		98E3FC9C2EA4785B00CAB088 /* Exceptions for "ios" folder in "Taskne" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = 1090E0CE2EA371F400C92785 /* ios */;
+			target = 1090E0CE2EA371F400C92785 /* Taskne */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -28,7 +28,7 @@
 		1090E0D12EA371F400C92785 /* ios */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				98E3FC9C2EA4785B00CAB088 /* Exceptions for "ios" folder in "ios" target */,
+				98E3FC9C2EA4785B00CAB088 /* Exceptions for "ios" folder in "Taskne" target */,
 			);
 			path = ios;
 			sourceTree = "<group>";
@@ -58,7 +58,7 @@
 		1090E0D02EA371F400C92785 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				1090E0CF2EA371F400C92785 /* ios.app */,
+				1090E0CF2EA371F400C92785 /* Taskne.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -66,9 +66,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		1090E0CE2EA371F400C92785 /* ios */ = {
+		1090E0CE2EA371F400C92785 /* Taskne */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 1090E0DA2EA371F400C92785 /* Build configuration list for PBXNativeTarget "ios" */;
+			buildConfigurationList = 1090E0DA2EA371F400C92785 /* Build configuration list for PBXNativeTarget "Taskne" */;
 			buildPhases = (
 				1090E0CB2EA371F400C92785 /* Sources */,
 				1090E0CC2EA371F400C92785 /* Frameworks */,
@@ -81,12 +81,12 @@
 			fileSystemSynchronizedGroups = (
 				1090E0D12EA371F400C92785 /* ios */,
 			);
-			name = ios;
+			name = Taskne;
 			packageProductDependencies = (
 				9830BD7E2EA38083001B2823 /* Auth0 */,
 			);
 			productName = ios;
-			productReference = 1090E0CF2EA371F400C92785 /* ios.app */;
+			productReference = 1090E0CF2EA371F400C92785 /* Taskne.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -104,7 +104,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 1090E0CA2EA371F400C92785 /* Build configuration list for PBXProject "ios" */;
+			buildConfigurationList = 1090E0CA2EA371F400C92785 /* Build configuration list for PBXProject "Taskne" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -121,7 +121,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				1090E0CE2EA371F400C92785 /* ios */,
+				1090E0CE2EA371F400C92785 /* Taskne */,
 			);
 		};
 /* End PBXProject section */
@@ -343,7 +343,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		1090E0CA2EA371F400C92785 /* Build configuration list for PBXProject "ios" */ = {
+		1090E0CA2EA371F400C92785 /* Build configuration list for PBXProject "Taskne" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				1090E0D82EA371F400C92785 /* Debug */,
@@ -352,7 +352,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		1090E0DA2EA371F400C92785 /* Build configuration list for PBXNativeTarget "ios" */ = {
+		1090E0DA2EA371F400C92785 /* Build configuration list for PBXNativeTarget "Taskne" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				1090E0DB2EA371F400C92785 /* Debug */,

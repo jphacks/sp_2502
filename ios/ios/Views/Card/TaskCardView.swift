@@ -17,14 +17,10 @@ struct TaskCardView: View {
                 CardConstants.Colors.taskCardBackground
             }
 
-            // 絵文字表示
+            // 絵文字表示（中央に配置）
             if let emoji = emoji {
-                VStack {
-                    Spacer()
-                    Text(emoji)
-                        .font(.system(size: CardConstants.Typography.emojiSize))
-                        .padding(.bottom, 8)
-                }
+                Text(emoji)
+                    .font(.system(size: CardConstants.Typography.emojiSize))
             }
         }
     }

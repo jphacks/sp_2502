@@ -39,7 +39,7 @@ class CardViewModel: ObservableObject {
 
             case .like:
                 // タスクを完了に更新
-                await tRPCService.shared.statusUpdateTask(taskId: card.id, status: .completed, token: accessToken)
+                await tRPCService.shared.statusUpdateTask(taskId: card.id, status: .active, token: accessToken)
                 print("❤️ Like: \(card.id)")
                 moveToNextCard()
 
@@ -62,7 +62,8 @@ class CardViewModel: ObservableObject {
                             id: re.id,
                             imageURL: imagePath,
                             taskText: re.title ?? "",
-                            emoji: emoji
+                            emoji: emoji,
+                            title: re.title
                         )
                         cards.insert(newCard, at: 0)
                     }

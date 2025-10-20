@@ -15,8 +15,8 @@ enum tRPCError: Error {
 }
 
 final class tRPCService {
-    private let baseURL = "http://localhost:3304"
-    // 本番環境用（コメントアウト）: "https://sp-2502.vercel.app/api/trpc"
+    private let baseURL = "https://sp-2502.vercel.app"
+    // 本番環境用（コメントアウト）: "https://sp-2502.vercel.app"
 
     static let shared = tRPCService()
 

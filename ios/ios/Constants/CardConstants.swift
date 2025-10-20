@@ -118,7 +118,7 @@ enum CardConstants {
     // MARK: - Typography
 
     enum Typography {
-        static let titleSize: CGFloat = 24
+        static let titleSize: CGFloat = 32
         static let titleWeight: Font.Weight = .bold
 
         static let descriptionSize: CGFloat = 16
