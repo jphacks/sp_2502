@@ -12,11 +12,12 @@ import { createRemoteJWKSet, jwtVerify } from "jose";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
+import { env } from "@/env";
 import { getSession } from "@/server/auth/helpers";
 import { db } from "@/server/db";
 
-const issuer = process.env.AUTH0_ISSUER_BASE_URL!; // example.us.auth0.com
-const audience = process.env.AUTH0_AUDIENCE!; // https://api.example.com
+const issuer = env.AUTH0_ISSUER_BASE_URL;
+const audience = env.AUTH0_AUDIENCE;
 const JWKS = createRemoteJWKSet(new URL(`${issuer}.well-known/jwks.json`));
 
 export const createTRPCContext = async (opts: { headers: Headers }) => {
@@ -29,22 +30,28 @@ export const createTRPCContext = async (opts: { headers: Headers }) => {
   // 2) Bearer（iOSなどネイティブから）
   const auth =
     opts.headers.get("authorization") ?? opts.headers.get("Authorization");
-  if (auth?.startsWith("Bearer ")) {
-    const token = auth.split(" ")[1]!;
-    const { payload } = await jwtVerify(token, JWKS, {
-      issuer,
-      audience, // Auth0のAPI Identifier
-    });
+  if (auth?.startsWith("Bearer ") && audience) {
+    try {
+      const token = auth.split(" ")[1]!;
+      const { payload } = await jwtVerify(token, JWKS, {
+        issuer,
+        audience,
+      });
 
-    const user = {
-      sub: String(payload.sub),
-      email: typeof payload.email === "string" ? payload.email : undefined,
-      name: typeof payload.name === "string" ? payload.name : undefined,
-      picture:
-        typeof payload.picture === "string" ? payload.picture : undefined,
-    };
+      const user = {
+        sub: String(payload.sub),
+        email: typeof payload.email === "string" ? payload.email : undefined,
+        name: typeof payload.name === "string" ? payload.name : undefined,
+        picture:
+          typeof payload.picture === "string" ? payload.picture : undefined,
+      };
 
-    return { db, session: { user }, ...opts };
+      return { db, session: { user }, ...opts };
+    } catch (error) {
+      console.error("Bearer token verification failed:", error);
+      // トークン検証に失敗した場合は未認証として扱う
+      return { db, session: null, ...opts };
+    }
   }
 
   return { db, session: null, ...opts };
@@ -149,7 +156,15 @@ export const protectedProcedure = t.procedure
     });
 
     if (!userResult.success) {
-      console.error("Failed to sync user:", userResult.error);
+      console.error("Failed to sync user to database:", {
+        error: userResult.error,
+        userId: ctx.session.user.sub,
+        email: ctx.session.user.email,
+        errorKind: userResult.error.kind,
+        errorCode: userResult.error.code,
+        errorMessage: userResult.error.message,
+        errorCause: userResult.error.cause,
+      });
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: "Failed to sync user data",

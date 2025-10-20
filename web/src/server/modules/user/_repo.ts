@@ -30,6 +30,7 @@ export const upsertUser = async (
           email: input.email,
           name: input.name,
           image: input.image,
+          // emailVerifiedは更新しない（既存の値を保持）
         },
       })
       .returning();
@@ -45,6 +46,12 @@ export const upsertUser = async (
 
     return Ok(user);
   } catch (error) {
+    console.error("Database error in upsertUser:", {
+      input,
+      error,
+      errorMessage: error instanceof Error ? error.message : String(error),
+      errorStack: error instanceof Error ? error.stack : undefined,
+    });
     return Err(Errors.infraDb("USER_UPSERT_FAILED", error));
   }
 };
