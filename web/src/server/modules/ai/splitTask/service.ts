@@ -2,6 +2,7 @@ import OpenAI from "openai";
 
 import type { DBLike } from "@/server/db";
 import type { SelectTask } from "@/server/db/schema/tasks";
+import { updateTaskStatus } from "@/server/modules/task";
 import { type ProjectId, TaskId, type UserId } from "@/server/types/brand";
 import { type AppError, Errors } from "@/server/types/errors";
 import { type AsyncResult, Err, Ok } from "@/server/types/result";
@@ -156,6 +157,12 @@ export const execute = async (
     });
 
     if (!secondTaskResult.success) return Err(secondTaskResult.error);
+
+    await updateTaskStatus(tx as DBLike, {
+      taskId,
+      userId,
+      status: "waiting",
+    });
 
     return Ok({
       first_task_id: TaskId.parse(firstTaskResult.data.id),
