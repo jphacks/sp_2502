@@ -8,6 +8,7 @@ const {
   AUTH0_ISSUER_BASE_URL,
   AUTH0_CLIENT_ID,
   AUTH0_CLIENT_SECRET,
+  AUTH0_AUDIENCE,
   LOCAL_DATABASE_URL,
   PROD_DATABASE_URL,
   SKIP_ENV_VALIDATION,
@@ -26,6 +27,7 @@ export const env = createEnv({
     AUTH0_ISSUER_BASE_URL: z.string().url(),
     AUTH0_CLIENT_ID: z.string(),
     AUTH0_CLIENT_SECRET: z.string(),
+    AUTH0_AUDIENCE: z.string().optional(),
     DATABASE_URL: z.string().url(),
     NODE_ENV: z
       .enum(["development", "test", "production"])
@@ -53,6 +55,7 @@ export const env = createEnv({
     AUTH0_ISSUER_BASE_URL: AUTH0_ISSUER_BASE_URL,
     AUTH0_CLIENT_ID: AUTH0_CLIENT_ID,
     AUTH0_CLIENT_SECRET: AUTH0_CLIENT_SECRET,
+    AUTH0_AUDIENCE: AUTH0_AUDIENCE,
     DATABASE_URL:
       DB_RUNTIME === "local" ? LOCAL_DATABASE_URL : PROD_DATABASE_URL,
     NODE_ENV: NODE_ENV,
