@@ -1,4 +1,4 @@
-import { Box, Button, VStack, Text } from "@chakra-ui/react";
+import { Box, Button, VStack, Text, Image } from "@chakra-ui/react";
 import Link from "next/link";
 
 import { HomeClient } from "@/app/_components/home-client";
@@ -11,33 +11,54 @@ export default async function Home() {
   // 認証失敗時：シンプルなログインボタンを表示
   if (!session?.user) {
     return (
-      <Box
-        w="100vw"
-        h="100vh"
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-        bg="#860F0F">
-        <VStack gap={6}>
-          <Text fontSize="48px" fontWeight="bold" color="#FFBE45">
-            タスクのカケラ
-          </Text>
+      <HydrateClient>
+        <VStack
+          w="100vw"
+          bg="#fff"
+          alignItems="center"
+          justifyContent="center"
+          position="relative"
+          h="100vh">
+          <Image
+            src="/images/logo.png"
+            alt="Logo"
+            w="350px"
+            objectFit="contain"
+            h="300px"
+          />
+          <Image
+            src="/images/choco.svg"
+            alt="Logo"
+            w="100px"
+            left="35%"
+            top="25%"
+            rotate="-20deg"
+            position="absolute"
+          />
+          <Image
+            src="/images/choco.svg"
+            alt="Logo"
+            w="100px"
+            right="35%"
+            bottom="40%"
+            rotate="20deg"
+            position="absolute"
+          />
           <Link href="/auth/login">
             <Button
               size="lg"
-              bg="#FFBE45"
-              color="#000000"
+              bg="#860F0F"
+              color="#fff"
               fontSize="24px"
               px={12}
               py={8}
               borderRadius="20px"
-              _hover={{ bg: "#FFD166" }}
-              _active={{ bg: "#FFAA00" }}>
+              _hover={{ bg: "#b01c1cff" }}>
               ログイン
             </Button>
           </Link>
         </VStack>
-      </Box>
+      </HydrateClient>
     );
   }
 
