@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { and, desc, eq, sql } from "drizzle-orm";
 
 import type { DBLike } from "@/server/db";
@@ -26,27 +27,41 @@ export const insertChildTask = async (
   },
 ): AsyncResult<SelectTask, AppError> => {
   try {
-    const [task] = await db
-      .insert(tasks)
-      .values({
-        userId: values.userId,
-        projectId: values.projectId,
-        name: values.name,
-        parentId: values.parentId,
-      } satisfies InsertTask)
-      .returning();
+    const [task] = await Sentry.startSpan(
+      {
+        name: "db.insertChildTask",
+        op: "db.insert",
+      },
+      async () =>
+        await db
+          .insert(tasks)
+          .values({
+            userId: values.userId,
+            projectId: values.projectId,
+            name: values.name,
+            parentId: values.parentId,
+          } satisfies InsertTask)
+          .returning(),
+    );
 
     if (!task?.parentId) {
       return Err(Errors.infraDb("DB_ERROR"));
     }
 
-    await db
-      .insert(taskChildren)
-      .values({
-        taskId: task.parentId,
-        childId: task.id,
-      } satisfies InsertTaskChildren)
-      .returning();
+    await Sentry.startSpan(
+      {
+        name: "db.insertTaskChildren",
+        op: "db.insert",
+      },
+      async () =>
+        await db
+          .insert(taskChildren)
+          .values({
+            taskId: task.parentId!,
+            childId: task.id,
+          } satisfies InsertTaskChildren)
+          .returning(),
+    );
 
     return Ok(task);
   } catch (e) {
@@ -72,20 +87,27 @@ export const updateChildTaskById = async (
     if (values.name !== undefined) patch.name = values.name;
     if (values.status !== undefined) patch.status = values.status;
     if (values.priority !== undefined) patch.priority = values.priority;
-    const [task] = await db
-      .update(tasks)
-      .set({
-        ...patch,
-        updatedAt: sql`now()`,
-      })
-      .where(
-        and(
-          eq(tasks.id, key.id),
-          eq(tasks.userId, key.userId),
-          eq(tasks.parentId, key.parentId),
-        ),
-      )
-      .returning();
+    const [task] = await Sentry.startSpan(
+      {
+        name: "db.updateChildTaskById",
+        op: "db.update",
+      },
+      async () =>
+        await db
+          .update(tasks)
+          .set({
+            ...patch,
+            updatedAt: sql`now()`,
+          })
+          .where(
+            and(
+              eq(tasks.id, key.id),
+              eq(tasks.userId, key.userId),
+              eq(tasks.parentId, key.parentId),
+            ),
+          )
+          .returning(),
+    );
 
     if (!task) {
       return Err(Errors.notFound());
@@ -101,13 +123,20 @@ export const findProjectByTaskId = async (
   taskId: TaskId,
 ): AsyncResult<SelectProject, AppError> => {
   try {
-    const project = await db
-      .select({ project: projects })
-      .from(tasks)
-      .innerJoin(projects, eq(tasks.projectId, projects.id))
-      .where(eq(tasks.id, taskId))
-      .limit(1)
-      .then(rows => rows[0]?.project ?? null);
+    const project = await Sentry.startSpan(
+      {
+        name: "db.findProjectByTaskId",
+        op: "db.select",
+      },
+      async () =>
+        await db
+          .select({ project: projects })
+          .from(tasks)
+          .innerJoin(projects, eq(tasks.projectId, projects.id))
+          .where(eq(tasks.id, taskId))
+          .limit(1)
+          .then(rows => rows[0]?.project ?? null),
+    );
 
     if (!project) {
       return Err(Errors.notFound());
@@ -124,11 +153,18 @@ export const findTasksByProjectId = async (
   projectId: ProjectId,
 ): AsyncResult<SelectTask[], AppError> => {
   try {
-    const rows = await db
-      .select()
-      .from(tasks)
-      .where(eq(tasks.projectId, projectId))
-      .orderBy(desc(tasks.createdAt));
+    const rows = await Sentry.startSpan(
+      {
+        name: "db.findTasksByProjectId",
+        op: "db.select",
+      },
+      async () =>
+        await db
+          .select()
+          .from(tasks)
+          .where(eq(tasks.projectId, projectId))
+          .orderBy(desc(tasks.createdAt)),
+    );
 
     return Ok(rows);
   } catch (e) {
@@ -141,11 +177,14 @@ export const findTaskById = async (
   taskId: TaskId,
 ): AsyncResult<SelectTask, AppError> => {
   try {
-    const [task] = await db
-      .select()
-      .from(tasks)
-      .where(eq(tasks.id, taskId))
-      .limit(1);
+    const [task] = await Sentry.startSpan(
+      {
+        name: "db.findTaskById",
+        op: "db.select",
+      },
+      async () =>
+        await db.select().from(tasks).where(eq(tasks.id, taskId)).limit(1),
+    );
 
     if (!task) {
       return Err(Errors.notFound());

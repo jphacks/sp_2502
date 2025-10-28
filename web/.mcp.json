@@ -21,6 +21,9 @@
       "command": "npx",
       "args": ["-y", "@chakra-ui/react-mcp"],
       "env": {}
+    },
+    "Sentry": {
+      "url": "https://mcp.sentry.dev/mcp/masakichi41/sp_2502"
     }
   }
 }

@@ -7,6 +7,7 @@
  * need to use are documented accordingly near the end.
  */
 
+import * as Sentry from "@sentry/nextjs";
 import { initTRPC, TRPCError } from "@trpc/server";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import superjson from "superjson";
@@ -78,6 +79,10 @@ const t = initTRPC.context<typeof createTRPCContext>().create({
   },
 });
 
+const sentryTrpc = Sentry.trpcMiddleware({
+  attachRpcInput: false, // 入力送信は既定で無効。必要時のみtrue（PII注意）
+});
+
 /**
  * Create a server-side caller.
  *
@@ -129,7 +134,9 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
  * guarantee that a user querying is authorized, but you can still access user session data if they
  * are logged in.
  */
-export const publicProcedure = t.procedure.use(timingMiddleware);
+export const publicProcedure = t.procedure
+  .use(sentryTrpc)
+  .use(timingMiddleware);
 
 /**
  * Protected (authenticated) procedure

@@ -1,3 +1,5 @@
+import * as Sentry from "@sentry/nextjs";
+
 import type { DBLike } from "@/server/db";
 import { users } from "@/server/db/schema/users";
 import { type AppError, Errors } from "@/server/types/errors";
@@ -15,25 +17,32 @@ export const upsertUser = async (
   input: UpsertUserInput,
 ): AsyncResult<typeof users.$inferSelect, AppError> => {
   try {
-    const [user] = await dbLike
-      .insert(users)
-      .values({
-        id: input.id,
-        email: input.email,
-        name: input.name,
-        image: input.image,
-        emailVerified: null,
-      })
-      .onConflictDoUpdate({
-        target: users.id,
-        set: {
-          email: input.email,
-          name: input.name,
-          image: input.image,
-          // emailVerifiedは更新しない（既存の値を保持）
-        },
-      })
-      .returning();
+    const [user] = await Sentry.startSpan(
+      {
+        name: "db.upsertUser",
+        op: "db.insert",
+      },
+      async () =>
+        await dbLike
+          .insert(users)
+          .values({
+            id: input.id,
+            email: input.email,
+            name: input.name,
+            image: input.image,
+            emailVerified: null,
+          })
+          .onConflictDoUpdate({
+            target: users.id,
+            set: {
+              email: input.email,
+              name: input.name,
+              image: input.image,
+              // emailVerifiedは更新しない（既存の値を保持）
+            },
+          })
+          .returning(),
+    );
 
     if (!user) {
       return Err(

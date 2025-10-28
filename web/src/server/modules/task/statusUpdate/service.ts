@@ -1,3 +1,5 @@
+import * as Sentry from "@sentry/nextjs";
+
 import type { DBLike } from "@/server/db";
 import { toDTO } from "@/server/modules/task/_dto";
 import {
@@ -29,63 +31,70 @@ export const execute = async (
     return Err(Errors.validation("INVALID_INPUT", parsed.error.issues));
   }
 
-  return deps.db.transaction(async tx => {
-    const txDb = tx as DBLike;
+  return Sentry.startSpan(
+    {
+      name: "task.statusUpdate.execute",
+      op: "db.tx",
+    },
+    async () =>
+      deps.db.transaction(async tx => {
+        const txDb = tx as DBLike;
 
-    // タスクのステータスを更新
-    const updateResult = await updateTaskStatus(txDb, {
-      taskId: parsed.data.taskId as TaskId,
-      userId: parsed.data.userId as UserId,
-      status: parsed.data.status,
-    });
-
-    if (!updateResult.success) {
-      return Err(updateResult.error);
-    }
-
-    const updatedTask = updateResult.data;
-
-    // statusがcompletedになった場合、親タスクの処理を行う
-    if (parsed.data.status === "completed" && updatedTask.parentId) {
-      const parentTaskResult = await selectTaskById(txDb, {
-        taskId: updatedTask.parentId as TaskId,
-        userId: parsed.data.userId as UserId,
-      });
-
-      if (
-        parentTaskResult.success &&
-        parentTaskResult.data.status === "waiting"
-      ) {
-        // 親タスクの全ての子タスクを取得
-        const childTasksResult = await selectChildTasksByParentId(txDb, {
-          parentId: updatedTask.parentId as TaskId,
+        // タスクのステータスを更新
+        const updateResult = await updateTaskStatus(txDb, {
+          taskId: parsed.data.taskId as TaskId,
           userId: parsed.data.userId as UserId,
+          status: parsed.data.status,
         });
 
-        if (!childTasksResult.success) {
-          return Err(childTasksResult.error);
+        if (!updateResult.success) {
+          return Err(updateResult.error);
         }
 
-        // 全ての子タスクがcompletedかチェック
-        const allChildrenCompleted = childTasksResult.data.every(
-          task => task.status === "completed",
-        );
+        const updatedTask = updateResult.data;
 
-        // 全ての子タスクがcompletedの場合、親タスクをactiveに更新
-        if (allChildrenCompleted) {
-          const parentUpdateResult = await updateTaskStatus(txDb, {
+        // statusがcompletedになった場合、親タスクの処理を行う
+        if (parsed.data.status === "completed" && updatedTask.parentId) {
+          const parentTaskResult = await selectTaskById(txDb, {
             taskId: updatedTask.parentId as TaskId,
             userId: parsed.data.userId as UserId,
-            status: "active",
           });
 
-          if (!parentUpdateResult.success) {
-            return Err(parentUpdateResult.error);
+          if (
+            parentTaskResult.success &&
+            parentTaskResult.data.status === "waiting"
+          ) {
+            // 親タスクの全ての子タスクを取得
+            const childTasksResult = await selectChildTasksByParentId(txDb, {
+              parentId: updatedTask.parentId as TaskId,
+              userId: parsed.data.userId as UserId,
+            });
+
+            if (!childTasksResult.success) {
+              return Err(childTasksResult.error);
+            }
+
+            // 全ての子タスクがcompletedかチェック
+            const allChildrenCompleted = childTasksResult.data.every(
+              task => task.status === "completed",
+            );
+
+            // 全ての子タスクがcompletedの場合、親タスクをactiveに更新
+            if (allChildrenCompleted) {
+              const parentUpdateResult = await updateTaskStatus(txDb, {
+                taskId: updatedTask.parentId as TaskId,
+                userId: parsed.data.userId as UserId,
+                status: "active",
+              });
+
+              if (!parentUpdateResult.success) {
+                return Err(parentUpdateResult.error);
+              }
+            }
           }
         }
-      }
-    }
 
-    return Ok(toDTO(updatedTask));
-  });
+        return Ok(toDTO(updatedTask));
+      }),
+  );
 };

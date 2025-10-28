@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import OpenAI from "openai";
 
 import type { DBLike } from "@/server/db";
@@ -139,36 +140,43 @@ export const execute = async (
     return Err(Errors.external("OPENAI_API_ERROR", e));
   }
 
-  return deps.db.transaction(async tx => {
-    const firstTaskResult = await insertChildTask(tx as DBLike, {
-      userId,
-      projectId,
-      name: firstHalf,
-      parentId: taskId,
-    });
+  return Sentry.startSpan(
+    {
+      name: "ai.splitTask.execute",
+      op: "db.tx",
+    },
+    async () =>
+      deps.db.transaction(async tx => {
+        const firstTaskResult = await insertChildTask(tx as DBLike, {
+          userId,
+          projectId,
+          name: firstHalf,
+          parentId: taskId,
+        });
 
-    if (!firstTaskResult.success) return Err(firstTaskResult.error);
+        if (!firstTaskResult.success) return Err(firstTaskResult.error);
 
-    const secondTaskResult = await insertChildTask(tx as DBLike, {
-      userId,
-      projectId,
-      name: secondHalf,
-      parentId: taskId,
-    });
+        const secondTaskResult = await insertChildTask(tx as DBLike, {
+          userId,
+          projectId,
+          name: secondHalf,
+          parentId: taskId,
+        });
 
-    if (!secondTaskResult.success) return Err(secondTaskResult.error);
+        if (!secondTaskResult.success) return Err(secondTaskResult.error);
 
-    await updateTaskStatus(tx as DBLike, {
-      taskId,
-      userId,
-      status: "waiting",
-    });
+        await updateTaskStatus(tx as DBLike, {
+          taskId,
+          userId,
+          status: "waiting",
+        });
 
-    return Ok({
-      first_task_id: TaskId.parse(firstTaskResult.data.id),
-      first_task_name: firstTaskResult.data.name,
-      second_task_id: TaskId.parse(secondTaskResult.data.id),
-      second_task_name: secondTaskResult.data.name,
-    });
-  });
+        return Ok({
+          first_task_id: TaskId.parse(firstTaskResult.data.id),
+          first_task_name: firstTaskResult.data.name,
+          second_task_id: TaskId.parse(secondTaskResult.data.id),
+          second_task_name: secondTaskResult.data.name,
+        });
+      }),
+  );
 };

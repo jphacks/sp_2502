@@ -1,3 +1,5 @@
+import * as Sentry from "@sentry/nextjs";
+
 import { toDTO } from "@/server/modules/task/_dto";
 import { selectUnprocessedTasksByUserId } from "@/server/modules/task/_repo";
 import type { UserId } from "@/server/types/brand";
@@ -19,18 +21,25 @@ export const execute = async (
     return Err(Errors.validation("INVALID_INPUT", p.error.issues));
   }
 
-  return deps.db.transaction(async tx => {
-    const result = await selectUnprocessedTasksByUserId(
-      tx,
-      { userId: p.data.userId as UserId },
-      { orderBy: p.data.order },
-    );
-    if (!result.success) {
-      return Err(result.error);
-    }
+  return Sentry.startSpan(
+    {
+      name: "task.unprocessedList.execute",
+      op: "db.tx",
+    },
+    async () =>
+      deps.db.transaction(async tx => {
+        const result = await selectUnprocessedTasksByUserId(
+          tx,
+          { userId: p.data.userId as UserId },
+          { orderBy: p.data.order },
+        );
+        if (!result.success) {
+          return Err(result.error);
+        }
 
-    return Ok({
-      tasks: result.data.map(toDTO),
-    });
-  });
+        return Ok({
+          tasks: result.data.map(toDTO),
+        });
+      }),
+  );
 };

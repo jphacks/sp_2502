@@ -1,3 +1,5 @@
+import * as Sentry from "@sentry/nextjs";
+
 import { toDTO } from "@/server/modules/task/_dto";
 import { deleteTask } from "@/server/modules/task/_repo";
 import type { UserId } from "@/server/types/brand";
@@ -23,15 +25,22 @@ export const execute = async (
     return Err(Errors.validation("INVALID_INPUT", p.error.issues));
   }
 
-  return deps.db.transaction(async tx => {
-    const result = await deleteTask(tx, {
-      taskId: p.data.taskId,
-      userId: p.data.userId as UserId,
-    });
-    if (!result.success) {
-      return Err(result.error);
-    }
+  return Sentry.startSpan(
+    {
+      name: "task.delete.execute",
+      op: "db.tx",
+    },
+    async () =>
+      deps.db.transaction(async tx => {
+        const result = await deleteTask(tx, {
+          taskId: p.data.taskId,
+          userId: p.data.userId as UserId,
+        });
+        if (!result.success) {
+          return Err(result.error);
+        }
 
-    return Ok(toDTO(result.data));
-  });
+        return Ok(toDTO(result.data));
+      }),
+  );
 };

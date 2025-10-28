@@ -1,3 +1,5 @@
+import * as Sentry from "@sentry/nextjs";
+
 import type { DBLike } from "@/server/db";
 import { toDTO } from "@/server/modules/task/_dto";
 import { selectTaskById } from "@/server/modules/task/_repo";
@@ -26,49 +28,56 @@ export const execute = async (
     return Err(Errors.validation("INVALID_INPUT", p.error.issues));
   }
 
-  return deps.db.transaction(async tx => {
-    const txDb = tx as DBLike;
-    const taskChain: Output = [];
-    let currentTaskId: string | null = p.data.taskId;
-    let depth = 0;
+  return Sentry.startSpan(
+    {
+      name: "task.select.execute",
+      op: "db.tx",
+    },
+    async () =>
+      deps.db.transaction(async tx => {
+        const txDb = tx as DBLike;
+        const taskChain: Output = [];
+        let currentTaskId: string | null = p.data.taskId;
+        let depth = 0;
 
-    // 親タスクを辿る
-    while (currentTaskId !== null && depth < MAX_DEPTH) {
-      const taskResult = await selectTaskById(txDb, {
-        taskId: currentTaskId as TaskId,
-        userId: p.data.userId as UserId,
-      });
+        // 親タスクを辿る
+        while (currentTaskId !== null && depth < MAX_DEPTH) {
+          const taskResult = await selectTaskById(txDb, {
+            taskId: currentTaskId as TaskId,
+            userId: p.data.userId as UserId,
+          });
 
-      if (!taskResult.success) {
-        return Err(taskResult.error);
-      }
+          if (!taskResult.success) {
+            return Err(taskResult.error);
+          }
 
-      const task = taskResult.data;
+          const task = taskResult.data;
 
-      // 親タスクIDを取得
-      currentTaskId = task.parentId;
+          // 親タスクIDを取得
+          currentTaskId = task.parentId;
 
-      // 最初のタスク（指定されたタスク自身）はスキップ
-      if (depth > 0) {
-        taskChain.push(toDTO(task)); // 配列の末尾に追加（親から順になるように）
-      }
+          // 最初のタスク（指定されたタスク自身）はスキップ
+          if (depth > 0) {
+            taskChain.push(toDTO(task)); // 配列の末尾に追加（親から順になるように）
+          }
 
-      depth++;
-    }
+          depth++;
+        }
 
-    // 最大深度に達した場合はエラー
-    if (depth >= MAX_DEPTH) {
-      return Err(
-        Errors.validation("MAX_DEPTH_EXCEEDED", [
-          {
-            code: "custom",
-            path: ["task_id"],
-            message: "Task hierarchy exceeds maximum depth",
-          },
-        ]),
-      );
-    }
+        // 最大深度に達した場合はエラー
+        if (depth >= MAX_DEPTH) {
+          return Err(
+            Errors.validation("MAX_DEPTH_EXCEEDED", [
+              {
+                code: "custom",
+                path: ["task_id"],
+                message: "Task hierarchy exceeds maximum depth",
+              },
+            ]),
+          );
+        }
 
-    return Ok(taskChain);
-  });
+        return Ok(taskChain);
+      }),
+  );
 };
